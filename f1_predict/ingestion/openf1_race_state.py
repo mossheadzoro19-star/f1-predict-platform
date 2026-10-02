@@ -25,6 +25,34 @@ def _ts(value: Any) -> pd.Timestamp | None:
     return stamp.tz_convert("UTC")
 
 
+def _coerce_gap_column(
+    frame: pd.DataFrame,
+    column: str,
+    lap_column: str,
+) -> pd.DataFrame:
+    """Split OpenF1 gap values into numeric seconds and lap-based gaps.
+
+    OpenF1 can return a numeric gap in seconds or strings such as +1 LAP.
+    A single numeric column cannot safely represent both units, so lap gaps
+    are kept in a separate feature and the seconds column becomes NaN.
+    """
+    if column not in frame:
+        frame[column] = pd.Series(pd.NA, index=frame.index, dtype="Float64")
+        frame[lap_column] = pd.Series(pd.NA, index=frame.index, dtype="Float64")
+        return frame
+
+    raw = frame[column].astype("string").str.strip()
+    numeric = pd.to_numeric(raw, errors="coerce")
+    lap_gap = pd.to_numeric(
+        raw.str.extract(r"([+-]?\d+(?:\.\d+)?)\s*LAPS?")[0],
+        errors="coerce",
+    )
+
+    frame[column] = numeric.astype("Float64")
+    frame[lap_column] = lap_gap.astype("Float64")
+    return frame
+
+
 def _latest_by_driver(
     rows: list[dict[str, Any]],
     time_key: str,
@@ -38,10 +66,8 @@ def _latest_by_driver(
     frame["observation_time"] = frame[time_key].map(_ts)
     frame = frame.dropna(subset=["driver_number", "observation_time"]).copy()
     frame["driver_number"] = frame["driver_number"].astype(int)
-
-    # pandas merge_asof requires the merge key itself to be globally sorted.
-    # Sorting by driver first causes "left keys must be sorted" on multi-driver data.
     frame = frame.sort_values(["observation_time", "driver_number"])
+
     left = snapshots[["driver_number", "snapshot_time"]].copy()
     left["driver_number"] = left["driver_number"].astype(int)
     left = left.sort_values(["snapshot_time", "driver_number"])
@@ -91,10 +117,8 @@ def _latest_stint(
     frame = frame.dropna(subset=["driver_number", "lap_start"]).copy()
     frame["driver_number"] = frame["driver_number"].astype(int)
     frame["lap_start"] = frame["lap_start"].astype(int)
-
-    # The asof key is lap_number, so it must be globally sorted before
-    # grouping by driver.
     frame = frame.sort_values(["lap_start", "driver_number"])
+
     left = snapshots[["driver_number", "lap_number", "snapshot_time"]].copy()
     left["driver_number"] = left["driver_number"].astype(int)
     left["lap_number"] = left["lap_number"].astype(int)
@@ -173,6 +197,16 @@ def _build_session_rows(
         interval = interval[["driver_number", "snapshot_time", *keep]].rename(
             columns={column: f"interval_{column}" for column in keep}
         )
+        interval = _coerce_gap_column(
+            interval,
+            "interval_gap_to_leader",
+            "interval_laps_behind_leader",
+        )
+        interval = _coerce_gap_column(
+            interval,
+            "interval_interval",
+            "interval_laps_behind_car_ahead",
+        )
         joined = joined.merge(
             interval, on=["driver_number", "snapshot_time"], how="left"
         )
@@ -215,10 +249,12 @@ def _build_session_rows(
     columns = [
         "season", "meeting_key", "session_key", "race_name",
         "driver_number", "lap_number", "prediction_time", "winner",
-        "position_position", "interval_gap_to_leader", "interval_interval",
-        "stint_compound", "stint_tyre_age_at_start",
-        "weather_air_temperature", "weather_track_temperature",
-        "weather_humidity", "weather_rainfall", "weather_wind_speed",
+        "position_position", "interval_gap_to_leader",
+        "interval_laps_behind_leader", "interval_interval",
+        "interval_laps_behind_car_ahead", "stint_compound",
+        "stint_tyre_age_at_start", "weather_air_temperature",
+        "weather_track_temperature", "weather_humidity", "weather_rainfall",
+        "weather_wind_speed",
     ]
     for column in columns:
         if column not in joined:
@@ -263,6 +299,42 @@ def build_race_state_dataset(
     dataset = dataset.sort_values(
         ["prediction_time", "season", "session_key", "driver_number"]
     ).reset_index(drop=True)
+
+    float_columns = [
+        "interval_gap_to_leader",
+        "interval_laps_behind_leader",
+        "interval_interval",
+        "interval_laps_behind_car_ahead",
+        "stint_tyre_age_at_start",
+        "weather_air_temperature",
+        "weather_track_temperature",
+        "weather_humidity",
+        "weather_rainfall",
+        "weather_wind_speed",
+    ]
+    for column in float_columns:
+        dataset[column] = pd.to_numeric(dataset[column], errors="coerce").astype(
+            "Float64"
+        )
+
+    dataset["position_position"] = pd.to_numeric(
+        dataset["position_position"], errors="coerce"
+    ).astype("Int64")
+    dataset["lap_number"] = pd.to_numeric(
+        dataset["lap_number"], errors="coerce"
+    ).astype("Int64")
+    dataset["driver_number"] = pd.to_numeric(
+        dataset["driver_number"], errors="coerce"
+    ).astype("Int64")
+    dataset["winner"] = (
+        pd.to_numeric(dataset["winner"], errors="coerce")
+        .fillna(0)
+        .astype("int8")
+    )
+    dataset["prediction_time"] = pd.to_datetime(
+        dataset["prediction_time"], utc=True
+    )
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
     dataset.to_parquet(output_path, index=False)
     return dataset
