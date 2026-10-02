@@ -29,3 +29,20 @@ def test_select_latest_by_driver_is_point_in_time():
     )
     assert target[1]["position"] == 2
     assert target[2]["position"] == 3
+
+
+def test_replay_fallback_is_not_marked_as_replayable():
+    import pandas as pd
+
+    service = object.__new__(RaceIntelligenceService)
+    service.model_season = 2025
+    service.features = pd.DataFrame(
+        [{"season": 2025, "round": 1, "driver_id": "ver", "grid": 1}]
+    )
+    service.prior_predictions = {"ver": 1.0}
+    service._driver_identity = lambda: {
+        "ver": {"code": "VER", "name": "Max Verstappen"}
+    }
+    result = service._replay_fallback("provider unavailable")
+    assert result.mode == "FALLBACK"
+    assert result.replay_available is False
