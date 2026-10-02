@@ -52,6 +52,49 @@ def _latest_by_driver(
     )
 
 
+
+def _latest_weather(
+    rows: list[dict[str, Any]],
+    snapshots: pd.DataFrame,
+) -> pd.DataFrame:
+    if not rows or snapshots.empty:
+        return pd.DataFrame()
+    frame = pd.DataFrame(rows)
+    if "date" not in frame:
+        return pd.DataFrame()
+    frame["observation_time"] = frame["date"].map(_ts)
+    frame = frame.dropna(subset=["observation_time"]).sort_values("observation_time")
+    left = snapshots[["snapshot_time"]].drop_duplicates().sort_values("snapshot_time")
+    return pd.merge_asof(
+        left, frame, left_on="snapshot_time", right_on="observation_time",
+        direction="backward",
+    )
+
+
+def _latest_stint(
+    rows: list[dict[str, Any]],
+    snapshots: pd.DataFrame,
+) -> pd.DataFrame:
+    if not rows or snapshots.empty:
+        return pd.DataFrame()
+    frame = pd.DataFrame(rows)
+    if not {"driver_number", "lap_start"}.issubset(frame.columns):
+        return pd.DataFrame()
+    frame["driver_number"] = pd.to_numeric(frame["driver_number"], errors="coerce")
+    frame["lap_start"] = pd.to_numeric(frame["lap_start"], errors="coerce")
+    frame = frame.dropna(subset=["driver_number", "lap_start"]).copy()
+    frame["driver_number"] = frame["driver_number"].astype(int)
+    frame["lap_start"] = frame["lap_start"].astype(int)
+    frame = frame.sort_values(["driver_number", "lap_start"])
+    left = snapshots[["driver_number", "lap_number", "snapshot_time"]].copy()
+    left["driver_number"] = left["driver_number"].astype(int)
+    left["lap_number"] = left["lap_number"].astype(int)
+    left = left.sort_values(["driver_number", "lap_number"])
+    return pd.merge_asof(
+        left, frame, left_on="lap_number", right_on="lap_start",
+        by="driver_number", direction="backward",
+    )
+
 def _build_session_rows(
     client: OpenF1Client,
     session: dict[str, Any],
@@ -85,40 +128,65 @@ def _build_session_rows(
         ["driver_number", "lap_number", "snapshot_time"]
     ].drop_duplicates()
 
-    fetchers = {
-        "position": ("date", client.get_positions),
-        "interval": ("date", client.get_intervals),
-        "stint": ("lap_start", client.get_stints),
-        "weather": ("date", client.get_weather),
-    }
     joined = snapshots.copy()
 
-    for name, (time_key, fetcher) in fetchers.items():
-        rows = fetcher(session_key)
-        if request_pause:
-            time.sleep(request_pause)
-        observed = _latest_by_driver(rows, time_key, snapshots)
-        if observed.empty:
-            continue
+    position_rows = client.get_positions(session_key)
+    time.sleep(request_pause)
+    position = _latest_by_driver(position_rows, "date", snapshots)
+    if not position.empty:
         keep = [
-            column
-            for column in observed.columns
+            column for column in position.columns
             if column not in {"snapshot_time", "driver_number", "observation_time"}
         ]
-        observed = observed[["driver_number", "snapshot_time", *keep]].copy()
-        observed = observed.rename(
-            columns={
-                column: f"{name}_{column}"
-                for column in keep
-                if column != "lap_number"
-            }
-        )
-        observed = observed.drop_duplicates(
-            subset=["driver_number", "snapshot_time"]
+        position = position[["driver_number", "snapshot_time", *keep]].rename(
+            columns={column: f"position_{column}" for column in keep}
         )
         joined = joined.merge(
-            observed, on=["driver_number", "snapshot_time"], how="left"
+            position, on=["driver_number", "snapshot_time"], how="left"
         )
+
+    interval_rows = client.get_intervals(session_key)
+    time.sleep(request_pause)
+    interval = _latest_by_driver(interval_rows, "date", snapshots)
+    if not interval.empty:
+        keep = [
+            column for column in interval.columns
+            if column not in {"snapshot_time", "driver_number", "observation_time"}
+        ]
+        interval = interval[["driver_number", "snapshot_time", *keep]].rename(
+            columns={column: f"interval_{column}" for column in keep}
+        )
+        joined = joined.merge(
+            interval, on=["driver_number", "snapshot_time"], how="left"
+        )
+
+    stint_rows = client.get_stints(session_key)
+    time.sleep(request_pause)
+    stint = _latest_stint(stint_rows, snapshots)
+    if not stint.empty:
+        keep = [
+            column for column in stint.columns
+            if column not in {"snapshot_time", "driver_number"}
+        ]
+        stint = stint[["driver_number", "snapshot_time", *keep]].rename(
+            columns={column: f"stint_{column}" for column in keep}
+        )
+        joined = joined.merge(
+            stint, on=["driver_number", "snapshot_time"], how="left"
+        )
+
+    weather_rows = client.get_weather(session_key)
+    time.sleep(request_pause)
+    weather = _latest_weather(weather_rows, snapshots)
+    if not weather.empty:
+        weather = weather.rename(
+            columns={
+                column: f"weather_{column}"
+                for column in weather.columns
+                if column not in {"snapshot_time", "observation_time"}
+            }
+        )
+        joined = joined.merge(weather, on="snapshot_time", how="left")
 
     joined["season"] = int(session["year"])
     joined["session_key"] = session_key
