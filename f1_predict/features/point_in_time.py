@@ -78,6 +78,71 @@ def _add_prior_count(
     return frame
 
 
+def _add_constructor_history(frame: pd.DataFrame) -> pd.DataFrame:
+    """Add constructor history at race granularity to prevent same-race leakage."""
+    frame = frame.copy()
+
+    constructor_races = (
+        frame.groupby(["season", "round", "constructor_id"], as_index=False)
+        .agg(
+            constructor_race_points=("points", "sum"),
+            constructor_race_winner=("winner", "max"),
+            prediction_time=("prediction_time", "min"),
+        )
+        .sort_values(["prediction_time", "season", "round", "constructor_id"])
+        .reset_index(drop=True)
+    )
+
+    grouped_points = constructor_races.groupby("constructor_id", sort=False)[
+        "constructor_race_points"
+    ]
+    for window in (3, 5):
+        constructor_races[f"constructor_points_last_{window}"] = (
+            grouped_points.transform(
+                lambda s: s.shift(1).rolling(window, min_periods=1).mean()
+            )
+        )
+
+    event = constructor_races["constructor_race_winner"].astype(float)
+    constructor_races["constructor_prior_win_rate"] = (
+        event.groupby(constructor_races["constructor_id"], sort=False)
+        .transform(lambda s: s.shift(1).expanding(min_periods=1).mean())
+    )
+
+    constructor_races["constructor_prior_starts"] = (
+        constructor_races.groupby("constructor_id", sort=False).cumcount()
+    )
+
+    history = constructor_races[
+        [
+            "season",
+            "round",
+            "constructor_id",
+            "constructor_points_last_3",
+            "constructor_points_last_5",
+            "constructor_prior_win_rate",
+            "constructor_prior_starts",
+        ]
+    ]
+
+    frame = frame.drop(
+        columns=[
+            "constructor_points_last_3",
+            "constructor_points_last_5",
+            "constructor_prior_win_rate",
+            "constructor_prior_starts",
+        ],
+        errors="ignore",
+    )
+
+    return frame.merge(
+        history,
+        on=["season", "round", "constructor_id"],
+        how="left",
+        validate="many_to_one",
+    )
+
+
 def _prepare_season(year: int) -> pd.DataFrame:
     """Prepare one season without calculating historical features."""
     data = _read_season(year)
@@ -137,9 +202,8 @@ def _add_historical_features(frame: pd.DataFrame) -> pd.DataFrame:
         ["prediction_time", "season", "round", "driver_id"]
     ).reset_index(drop=True)
 
-    # These statistics are intentionally calculated only after all seasons
-    # have been concatenated. This preserves driver/constructor history across
-    # season boundaries (for example, 2024 -> 2025).
+    # Driver history is naturally one row per driver per race, so shift(1)
+    # always moves to a genuinely earlier race for that driver.
     frame = _add_prior_rolling(
         frame, "driver_id", "finish_position_numeric", "driver_finish_position"
     )
@@ -147,16 +211,16 @@ def _add_historical_features(frame: pd.DataFrame) -> pd.DataFrame:
     frame = _add_prior_rate(frame, "driver_id", "winner", "driver_prior_win_rate")
     frame = _add_prior_count(frame, "driver_id", "driver_prior_starts")
 
-    frame = _add_prior_rolling(
-        frame, "constructor_id", "points", "constructor_points"
-    )
-    frame = _add_prior_rate(
-        frame, "constructor_id", "winner", "constructor_prior_win_rate"
-    )
-    frame = _add_prior_count(frame, "constructor_id", "constructor_prior_starts")
+    # Constructor history must be calculated at constructor-race granularity.
+    # Calculating directly on driver rows would let the second driver inherit
+    # the first driver's current-race result, which is target leakage.
+    frame = _add_constructor_history(frame)
 
     frame = _add_prior_rolling(
-        frame, ["driver_id", "circuit_id"], "finish_position_numeric", "driver_circuit_finish"
+        frame,
+        ["driver_id", "circuit_id"],
+        "finish_position_numeric",
+        "driver_circuit_finish",
     )
     frame = _add_prior_count(
         frame, ["driver_id", "circuit_id"], "driver_circuit_prior_starts"
