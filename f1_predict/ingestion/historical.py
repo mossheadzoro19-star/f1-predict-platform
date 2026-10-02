@@ -20,14 +20,45 @@ def _write_json(source: str, year: int, name: str, payload: Any) -> Path:
     return path
 
 
-def ingest_jolpica(year: int) -> Path:
-    payload = JolpicaClient().get_season_results(year)
-    return _write_json("jolpica", year, "season_results.json", payload)
+def _write_metadata(source: str, year: int, endpoints: list[str]) -> Path:
+    metadata = {
+        "source": source,
+        "season": year,
+        "retrieved_at_utc": datetime.now(timezone.utc).isoformat(),
+        "endpoints": endpoints,
+        "raw_data_policy": "Raw provider responses are retained locally and excluded from git.",
+    }
+    return _write_json(source, year, "metadata.json", metadata)
 
 
-def ingest_openf1(year: int) -> Path:
+def ingest_jolpica(year: int) -> list[Path]:
+    """Download the core season-level historical dataset from Jolpica."""
+    client = JolpicaClient()
+    files = [
+        ("races.json", client.get_season_schedule(year)),
+        ("results.json", client.get_season_results(year)),
+        ("qualifying.json", client.get_season_qualifying(year)),
+    ]
+    paths = [_write_json("jolpica", year, name, payload) for name, payload in files]
+    paths.append(
+        _write_metadata(
+            "jolpica",
+            year,
+            [
+                f"/ergast/f1/{year}/races/",
+                f"/ergast/f1/{year}/results/",
+                f"/ergast/f1/{year}/qualifying/",
+            ],
+        )
+    )
+    return paths
+
+
+def ingest_openf1(year: int) -> list[Path]:
     payload = OpenF1Client().get_sessions(year)
-    return _write_json("openf1", year, "sessions.json", payload)
+    path = _write_json("openf1", year, "sessions.json", payload)
+    metadata = _write_metadata("openf1", year, ["/v1/sessions"])
+    return [path, metadata]
 
 
 def main() -> None:
@@ -40,17 +71,15 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    retrieved_at = datetime.now(timezone.utc).isoformat()
-
+    paths: list[Path] = []
     if args.source in ("jolpica", "both"):
-        path = ingest_jolpica(args.year)
-        print(f"Jolpica data written to {path}")
-
+        paths.extend(ingest_jolpica(args.year))
     if args.source in ("openf1", "both"):
-        path = ingest_openf1(args.year)
-        print(f"OpenF1 data written to {path}")
+        paths.extend(ingest_openf1(args.year))
 
-    print(f"retrieved_at_utc={retrieved_at}")
+    print("Ingestion complete:")
+    for path in paths:
+        print(f"  {path}")
 
 
 if __name__ == "__main__":
