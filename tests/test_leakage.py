@@ -35,7 +35,7 @@ def _valid_frame():
                 "season": 2024, "round": 2, "driver_id": "a",
                 "constructor_id": "x", "circuit_id": "d",
                 "prediction_time": pd.Timestamp("2024-03-08T12:00:00Z"),
-                "winner": 0, "driver_prior_starts": 2,
+                "winner": 0, "driver_prior_starts": 1,
                 "constructor_prior_starts": 1, "driver_circuit_prior_starts": 0,
                 "driver_finish_position_last_3": 1.0,
                 "driver_finish_position_last_5": 1.0,
@@ -91,7 +91,7 @@ def test_prior_counts_are_monotonic():
 
 def test_decreasing_prior_count_is_rejected():
     frame = _valid_frame()
-    frame.loc[2, "driver_prior_starts"] = 0
+    frame.loc[2, "driver_prior_starts"] = -1
     with pytest.raises(AssertionError, match="decreases"):
         check_prior_counts_monotonic(frame)
 
