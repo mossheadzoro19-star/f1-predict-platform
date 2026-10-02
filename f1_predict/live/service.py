@@ -147,39 +147,10 @@ class RaceIntelligenceService:
             if end and end <= datetime.now(timezone.utc):
                 return max(observed), "OpenF1 historical laps"
 
-        # For a live race, session_result is not normally published yet.
-        # Use the most recent completed race at the same circuit as a target.
-        location = session.get("location")
-        year = int(session.get("year", datetime.now(timezone.utc).year))
-        if location:
-            for prior_year in range(year - 1, max(year - 4, 2022) - 1, -1):
-                try:
-                    prior = [
-                        item
-                        for item in self.client.get_sessions(prior_year)
-                        if item.get("session_name") == "Race"
-                        and item.get("location") == location
-                        and not item.get("is_cancelled", False)
-                    ]
-                    if not prior:
-                        continue
-                    prior_session = max(
-                        prior, key=lambda item: item.get("date_start", "")
-                    )
-                    prior_results = self.client.get_session_result(
-                        int(prior_session["session_key"])
-                    )
-                    counts = [
-                        int(item["number_of_laps"])
-                        for item in prior_results
-                        if item.get("number_of_laps") is not None
-                    ]
-                    if counts:
-                        return max(counts), "Same-circuit historical target"
-                except Exception:
-                    continue
-
-        return None, "Unknown"
+        # Do not perform additional network discovery inside a snapshot request.
+        # A later cached circuit profile can supply this value without blocking
+        # the live request path.
+        return None, "Target unavailable in current snapshot"
 
     def _race_state(
         self,
@@ -290,16 +261,24 @@ class RaceIntelligenceService:
 
             session_key = int(session["session_key"])
             positions = self.client.get_positions(session_key)
-            drivers = self.client.get_drivers(session_key)
-            intervals = self.client.get_intervals(session_key)
-            laps = self.client.get_laps(session_key)
-            stints = self.client.get_stints(session_key)
-            weather = self.client.get_weather(session_key)
-
             try:
-                results = self.client.get_session_result(session_key)
+                drivers = self.client.get_drivers(session_key)
             except Exception:
-                results = []
+                return self._replay_fallback(
+                    "OpenF1 driver metadata unavailable; historical replay fallback active."
+                )
+
+            def optional(fetcher: Any) -> list[dict[str, Any]]:
+                try:
+                    return fetcher(session_key)
+                except Exception:
+                    return []
+
+            intervals = optional(self.client.get_intervals)
+            laps = optional(self.client.get_laps)
+            stints = optional(self.client.get_stints)
+            weather = optional(self.client.get_weather)
+            results = optional(self.client.get_session_result)
 
             now = datetime.now(timezone.utc)
             start = _parse_datetime(session.get("date_start"))
