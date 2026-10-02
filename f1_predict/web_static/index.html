@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>F1 Predict — Race Intelligence</title>
+<style>
+:root{font-family:Inter,system-ui,sans-serif;color:#f5f5f5;background:#08090d}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top right,#20131b,#08090d 42%)}
+main{max-width:1180px;margin:auto;padding:32px 20px 60px}
+header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:28px}
+h1{margin:0;font-size:clamp(32px,5vw,58px);letter-spacing:-.05em}.muted{color:#9297a5}
+.status{border:1px solid #30333d;border-radius:999px;padding:9px 14px;font-size:12px;letter-spacing:.12em}
+.hero{display:grid;grid-template-columns:1.3fr .7fr;gap:16px;margin-bottom:18px}
+.card{background:#101218;border:1px solid #242731;border-radius:18px;padding:22px;box-shadow:0 18px 50px #0005}
+.event{font-size:28px;margin:8px 0}.big{font-size:42px;font-weight:800}
+.bar{height:8px;background:#252833;border-radius:99px;overflow:hidden;margin-top:6px}
+.fill{height:100%;background:#f1f1f1;border-radius:99px}
+table{width:100%;border-collapse:collapse}th,td{padding:14px 10px;text-align:left;border-bottom:1px solid #242731}
+th{color:#777d8d;font-size:12px;text-transform:uppercase;letter-spacing:.08em}.rank{width:48px;color:#777d8d}
+.prob{width:150px;text-align:right;font-weight:700}
+button{background:#f5f5f5;color:#090a0e;border:0;padding:10px 15px;border-radius:10px;cursor:pointer;font-weight:700;margin-left:8px}
+.footer{margin-top:18px;font-size:12px;color:#6f7481}
+@media(max-width:760px){.hero{grid-template-columns:1fr}header{flex-direction:column}}
+</style>
+</head>
+<body>
+<main>
+<header>
+<div><div class="muted">F1 PREDICT / RACE INTELLIGENCE</div><h1>Race probabilities.</h1><div class="muted">Historical knowledge + current race state.</div></div>
+<div><span id="status" class="status">CONNECTING</span><button onclick="loadSnapshot()">REFRESH</button></div>
+</header>
+<section class="hero">
+<div class="card"><div class="muted">SESSION</div><div id="event" class="event">Loading...</div><div id="session" class="muted"></div><p id="note" class="muted"></p></div>
+<div class="card"><div class="muted">TOP WIN PROBABILITY</div><div id="topDriver" class="big">—</div><div id="topProb" class="muted">—</div><div class="footer">Probabilities are model outputs, not guarantees.</div></div>
+</section>
+<section class="card">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+<div><strong>WIN PROBABILITY</strong><div class="muted">P(P1) — current snapshot</div></div><div id="updated" class="muted"></div>
+</div>
+<table><thead><tr><th>#</th><th>Driver</th><th>Track position</th><th class="prob">P(P1)</th></tr></thead><tbody id="drivers"></tbody></table>
+</section>
+<div class="footer">OpenF1 is an independent F1 data API. Live-provider access stays behind the backend; historical replay is the fallback.</div>
+</main>
+<script>
+async function loadSnapshot(){
+ const status=document.getElementById("status");status.textContent="UPDATING";
+ try{
+  const response=await fetch("/api/snapshot",{cache:"no-store"});const data=await response.json();
+  status.textContent=data.mode;const session=data.session||{};
+  document.getElementById("event").textContent=session.meeting_name||session.location||((session.year||"")+" "+(session.session_name||""));
+  document.getElementById("session").textContent=(session.session_name||"")+" · source: "+data.source;
+  document.getElementById("note").textContent=data.note||"";
+  document.getElementById("updated").textContent="Updated "+new Date(data.updated_at).toLocaleTimeString();
+  const rows=data.drivers||[];
+  if(rows.length){document.getElementById("topDriver").textContent=rows[0].driver;document.getElementById("topProb").textContent=(rows[0].win_probability*100).toFixed(1)+"% P(P1)";}
+  document.getElementById("drivers").innerHTML=rows.map(function(d,i){
+   return "<tr><td class='rank'>"+(i+1)+"</td><td><strong>"+escapeHtml(d.driver)+"</strong><div class='muted'>"+escapeHtml(d.team||d.code||"")+"</div></td><td>"+(d.position==null?"—":d.position)+"</td><td class='prob'>"+(d.win_probability*100).toFixed(1)+"%<div class='bar'><div class='fill' style='width:"+Math.min(100,d.win_probability*100)+"%'></div></div></td></tr>";
+  }).join("");
+ }catch(error){status.textContent="OFFLINE";document.getElementById("note").textContent=String(error);}
+}
+function escapeHtml(value){return String(value).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c];});}
+loadSnapshot();setInterval(loadSnapshot,10000);
+</script>
+</body>
+</html>
