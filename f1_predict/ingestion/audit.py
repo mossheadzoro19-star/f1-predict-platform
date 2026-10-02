@@ -21,16 +21,20 @@ def _races(payload: dict[str, Any]) -> list[dict[str, Any]]:
     return payload["MRData"]["RaceTable"]["Races"]
 
 
-def _nested_records(
-    races: list[dict[str, Any]],
-    key: str,
-) -> list[dict[str, Any]]:
+def _nested_records(races: list[dict[str, Any]], key: str) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
     for race in races:
         values = race.get(key, [])
         if isinstance(values, list):
             records.extend(item for item in values if isinstance(item, dict))
     return records
+
+
+def _round_counts(races: list[dict[str, Any]], key: str) -> dict[str, int]:
+    return {
+        str(race.get("round")): len(race.get(key, []))
+        for race in races
+    }
 
 
 def inspect_season(year: int) -> None:
@@ -41,18 +45,14 @@ def inspect_season(year: int) -> None:
     metadata = _load(directory / "metadata.json")
 
     races = _races(races_payload)
-    results = _nested_records(_races(results_payload), "Results")
-    qualifying = _nested_records(_races(qualifying_payload), "QualifyingResults")
+    result_races = _races(results_payload)
+    qualifying_races = _races(qualifying_payload)
+    results = _nested_records(result_races, "Results")
+    qualifying = _nested_records(qualifying_races, "QualifyingResults")
 
     race_rounds = [str(race.get("round")) for race in races]
-    result_rounds = [
-        str(race.get("round"))
-        for race in _races(results_payload)
-    ]
-    qualifying_rounds = [
-        str(race.get("round"))
-        for race in _races(qualifying_payload)
-    ]
+    result_rounds = [str(race.get("round")) for race in result_races]
+    qualifying_rounds = [str(race.get("round")) for race in qualifying_races]
 
     driver_ids = sorted({
         str(result["Driver"]["driverId"])
@@ -64,11 +64,21 @@ def inspect_season(year: int) -> None:
         for result in results
         if isinstance(result.get("Constructor"), dict) and result["Constructor"].get("constructorId")
     })
+    status_counts = Counter(str(result.get("status", "UNKNOWN")) for result in results)
 
-    status_counts = Counter(
-        str(result.get("status", "UNKNOWN"))
-        for result in results
-    )
+    result_counts = _round_counts(result_races, "Results")
+    qualifying_counts = _round_counts(qualifying_races, "QualifyingResults")
+
+    result_keys = {
+        (str(race.get("round")), str(item.get("number")))
+        for race in result_races
+        for item in race.get("Results", [])
+    }
+    qualifying_keys = {
+        (str(race.get("round")), str(item.get("number")))
+        for race in qualifying_races
+        for item in race.get("QualifyingResults", [])
+    }
 
     print(f"Jolpica season audit: {year}")
     print("=" * 60)
@@ -80,6 +90,9 @@ def inspect_season(year: int) -> None:
     print(f"Race rounds:          {race_rounds[0]} -> {race_rounds[-1]}")
     print(f"Result rounds:        {result_rounds[0]} -> {result_rounds[-1]}")
     print(f"Qualifying rounds:    {qualifying_rounds[0]} -> {qualifying_rounds[-1]}")
+    print(f"Result rows min/max:  {min(result_counts.values())}/{max(result_counts.values())}")
+    print(f"Qualifying min/max:   {min(qualifying_counts.values())}/{max(qualifying_counts.values())}")
+    print(f"Result/qualifying IDs: {len(result_keys & qualifying_keys)} shared")
     print(f"Metadata source:      {metadata.get('source')}")
     print(f"Retrieved at (UTC):   {metadata.get('retrieved_at_utc')}")
     print()
@@ -97,6 +110,16 @@ def inspect_season(year: int) -> None:
     print(f"Extra qualifying rounds:      {extra_qualifying or 'None'}")
     print()
 
+    print("Per-round record counts")
+    print("-" * 60)
+    for round_number in race_rounds:
+        print(
+            f"Round {round_number:>2}: "
+            f"results={result_counts.get(round_number, 0):>2} "
+            f"qualifying={qualifying_counts.get(round_number, 0):>2}"
+        )
+    print()
+
     print("Result status distribution")
     print("-" * 60)
     for status, count in status_counts.most_common():
@@ -104,9 +127,14 @@ def inspect_season(year: int) -> None:
 
     if not races or not results or not qualifying:
         raise RuntimeError("Season audit failed: one or more datasets are empty.")
-
     if missing_results or missing_qualifying:
         raise RuntimeError("Season audit failed: one or more race rounds are missing.")
+    if len(result_keys) != len(results) or len(qualifying_keys) != len(qualifying):
+        raise RuntimeError("Season audit failed: duplicate round/driver-number keys detected.")
+    if result_keys != qualifying_keys:
+        print("\nWARNING: result and qualifying driver-number coverage differs.")
+        print(f"Only in results: {sorted(result_keys - qualifying_keys)}")
+        print(f"Only in qualifying: {sorted(qualifying_keys - result_keys)}")
 
 
 def main() -> None:
