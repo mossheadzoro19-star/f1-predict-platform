@@ -19,7 +19,7 @@ class OpenF1Client:
         return {"Authorization": f"Bearer {token}"} if token else {}
 
     def _get_list(self, endpoint: str, params: dict[str, Any]) -> list[dict[str, Any]]:
-        with httpx.Client(timeout=30.0, follow_redirects=True) as client:
+        with httpx.Client(timeout=8.0, follow_redirects=True) as client:
             response = client.get(
                 f"{self.base_url}/{endpoint}",
                 params=params,
