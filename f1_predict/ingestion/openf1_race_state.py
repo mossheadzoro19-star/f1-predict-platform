@@ -38,10 +38,14 @@ def _latest_by_driver(
     frame["observation_time"] = frame[time_key].map(_ts)
     frame = frame.dropna(subset=["driver_number", "observation_time"]).copy()
     frame["driver_number"] = frame["driver_number"].astype(int)
-    frame = frame.sort_values(["driver_number", "observation_time"])
+
+    # pandas merge_asof requires the merge key itself to be globally sorted.
+    # Sorting by driver first causes "left keys must be sorted" on multi-driver data.
+    frame = frame.sort_values(["observation_time", "driver_number"])
     left = snapshots[["driver_number", "snapshot_time"]].copy()
     left["driver_number"] = left["driver_number"].astype(int)
-    left = left.sort_values(["driver_number", "snapshot_time"])
+    left = left.sort_values(["snapshot_time", "driver_number"])
+
     return pd.merge_asof(
         left,
         frame,
@@ -50,7 +54,6 @@ def _latest_by_driver(
         by="driver_number",
         direction="backward",
     )
-
 
 
 def _latest_weather(
@@ -66,7 +69,10 @@ def _latest_weather(
     frame = frame.dropna(subset=["observation_time"]).sort_values("observation_time")
     left = snapshots[["snapshot_time"]].drop_duplicates().sort_values("snapshot_time")
     return pd.merge_asof(
-        left, frame, left_on="snapshot_time", right_on="observation_time",
+        left,
+        frame,
+        left_on="snapshot_time",
+        right_on="observation_time",
         direction="backward",
     )
 
@@ -85,15 +91,24 @@ def _latest_stint(
     frame = frame.dropna(subset=["driver_number", "lap_start"]).copy()
     frame["driver_number"] = frame["driver_number"].astype(int)
     frame["lap_start"] = frame["lap_start"].astype(int)
-    frame = frame.sort_values(["driver_number", "lap_start"])
+
+    # The asof key is lap_number, so it must be globally sorted before
+    # grouping by driver.
+    frame = frame.sort_values(["lap_start", "driver_number"])
     left = snapshots[["driver_number", "lap_number", "snapshot_time"]].copy()
     left["driver_number"] = left["driver_number"].astype(int)
     left["lap_number"] = left["lap_number"].astype(int)
-    left = left.sort_values(["driver_number", "lap_number"])
+    left = left.sort_values(["lap_number", "driver_number"])
+
     return pd.merge_asof(
-        left, frame, left_on="lap_number", right_on="lap_start",
-        by="driver_number", direction="backward",
+        left,
+        frame,
+        left_on="lap_number",
+        right_on="lap_start",
+        by="driver_number",
+        direction="backward",
     )
+
 
 def _build_session_rows(
     client: OpenF1Client,
@@ -115,7 +130,9 @@ def _build_session_rows(
     if lap_frame.empty or "date_start" not in lap_frame:
         return pd.DataFrame()
     lap_frame["snapshot_time"] = lap_frame["date_start"].map(_ts)
-    lap_frame["lap_number"] = pd.to_numeric(lap_frame.get("lap_number"), errors="coerce")
+    lap_frame["lap_number"] = pd.to_numeric(
+        lap_frame.get("lap_number"), errors="coerce"
+    )
     lap_frame["driver_number"] = pd.to_numeric(
         lap_frame.get("driver_number"), errors="coerce"
     )
