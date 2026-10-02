@@ -45,4 +45,5 @@ def snapshot(
         "drivers": result.drivers,
         "race_state": result.race_state,
         "note": result.note,
+        "replay_available": result.replay_available,
     }
