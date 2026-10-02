@@ -59,18 +59,18 @@ class FeatureContract:
 
 
 def validate_feature_contract(frame: pd.DataFrame, contract: FeatureContract | None = None) -> None:
-    """Reject missing predictors and any accidental post-race predictor columns."""
+    """Reject forbidden post-race predictors before checking ordinary column availability."""
     contract = contract or FeatureContract.pre_race()
-
-    missing = sorted(set(contract.features) - set(frame.columns))
-    if missing:
-        raise ValueError(f"Missing pre-race feature columns: {missing}")
 
     forbidden = sorted(
         set(contract.excluded_post_race).intersection(contract.features)
     )
     if forbidden:
         raise ValueError(f"Feature contract contains forbidden post-race columns: {forbidden}")
+
+    missing = sorted(set(contract.features) - set(frame.columns))
+    if missing:
+        raise ValueError(f"Missing pre-race feature columns: {missing}")
 
     if contract.target not in frame.columns:
         raise ValueError(f"Missing target column: {contract.target}")
