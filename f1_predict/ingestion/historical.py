@@ -54,6 +54,12 @@ def ingest_jolpica(year: int) -> list[Path]:
     return paths
 
 
+def cleanup_legacy_jolpica_files(year: int) -> None:
+    """Remove files from the retired pre-paginated ingestion format."""
+    legacy_path = ROOT / "data" / "raw" / "jolpica" / str(year) / "season_results.json"
+    legacy_path.unlink(missing_ok=True)
+
+
 def ingest_openf1(year: int) -> list[Path]:
     payload = OpenF1Client().get_sessions(year)
     path = _write_json("openf1", year, "sessions.json", payload)
@@ -74,6 +80,7 @@ def main() -> None:
     paths: list[Path] = []
     if args.source in ("jolpica", "both"):
         paths.extend(ingest_jolpica(args.year))
+        cleanup_legacy_jolpica_files(args.year)
     if args.source in ("openf1", "both"):
         paths.extend(ingest_openf1(args.year))
 
