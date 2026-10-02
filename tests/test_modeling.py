@@ -39,7 +39,7 @@ def test_select_pre_race_dataset_uses_explicit_allow_list():
 
     assert list(X.columns) == list(FeatureContract.pre_race().features)
     assert "unexpected_numeric_column" not in X.columns
-    assert y.tolist().count(1) == 4
+    assert y.tolist().count(1) == 8
 
 
 def test_feature_contract_rejects_missing_predictor():
