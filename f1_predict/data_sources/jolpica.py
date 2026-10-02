@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import time
 from typing import Any
 
 import httpx
@@ -11,7 +12,9 @@ class JolpicaClient:
     """Adapter around Jolpica-F1's Ergast-compatible REST API."""
 
     base_url: str = "https://api.jolpi.ca/ergast/f1"
-    user_agent: str = "F1PredictPlatform/0.1 FastF1/0.0"
+    user_agent: str = "F1PredictPlatform/0.1"
+    request_delay_seconds: float = 1.0
+    max_retries: int = 4
 
     def _get_json(
         self,
@@ -21,20 +24,64 @@ class JolpicaClient:
         limit: int = 100,
         offset: int = 0,
     ) -> dict[str, Any]:
+        """Fetch one Jolpica page, retrying rate-limit responses with backoff."""
         url = f"{self.base_url}/{path.lstrip('/')}"
-        response = client.get(
-            url,
-            params={"limit": limit, "offset": offset},
-            headers={"User-Agent": self.user_agent},
-        )
-        response.raise_for_status()
-        payload = response.json()
-        if not isinstance(payload, dict):
-            raise TypeError(f"Unexpected Jolpica response from {url}")
-        return payload
+        params = {"limit": limit, "offset": offset}
+
+        for attempt in range(self.max_retries + 1):
+            if self.request_delay_seconds > 0:
+                time.sleep(self.request_delay_seconds)
+
+            response = client.get(
+                url,
+                params=params,
+                headers={"User-Agent": self.user_agent},
+            )
+
+            if response.status_code != 429:
+                response.raise_for_status()
+                payload = response.json()
+                if not isinstance(payload, dict):
+                    raise TypeError(f"Unexpected Jolpica response from {url}")
+                return payload
+
+            if attempt == self.max_retries:
+                response.raise_for_status()
+
+            retry_after = response.headers.get("Retry-After")
+            if retry_after and retry_after.isdigit():
+                delay = float(retry_after)
+            else:
+                delay = min(2**attempt, 30)
+
+            time.sleep(delay)
+
+        raise RuntimeError("Unreachable Jolpica retry state")
+
+    @staticmethod
+    def _page_item_count(
+        path: str,
+        page_races: list[dict[str, Any]],
+    ) -> int:
+        """Count the records represented by a page for correct offset pagination."""
+        if path.endswith("/results/"):
+            return sum(
+                len(race.get("Results", []))
+                for race in page_races
+                if isinstance(race.get("Results", []), list)
+            )
+
+        if path.endswith("/qualifying/"):
+            return sum(
+                len(race.get("QualifyingResults", []))
+                for race in page_races
+                if isinstance(race.get("QualifyingResults", []), list)
+            )
+
+        return len(page_races)
 
     def _get_all(self, path: str) -> dict[str, Any]:
-        """Fetch every page for an endpoint and combine RaceTable.Races."""
+        """Fetch every page and combine the returned RaceTable.Races objects."""
         races: list[dict[str, Any]] = []
         first_payload: dict[str, Any] | None = None
         offset = 0
@@ -52,12 +99,13 @@ class JolpicaClient:
                     raise TypeError(f"Unexpected RaceTable.Races payload from {path}")
 
                 races.extend(page_races)
+                page_count = self._page_item_count(path, page_races)
+                total = int(mrdata.get("total", offset + page_count))
 
-                total = int(mrdata.get("total", len(races)))
-                if not page_races or len(races) >= total:
+                if page_count == 0 or offset + page_count >= total:
                     break
 
-                offset += len(page_races)
+                offset += page_count
 
         assert first_payload is not None
         first_payload["MRData"]["limit"] = str(len(races))
