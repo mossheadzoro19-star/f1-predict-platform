@@ -62,15 +62,37 @@ def check_first_start_features(frame: pd.DataFrame) -> None:
 
 
 def check_prior_counts_monotonic(frame: pd.DataFrame) -> None:
-    """Prior-start counters cannot decrease for a driver across time."""
-    ordered = frame.sort_values(["driver_id", "prediction_time", "season", "round"])
+    """Prior-start counters must equal the number of earlier rows for each driver."""
+    ordered = frame.sort_values(
+        ["prediction_time", "season", "round", "driver_id"]
+    ).reset_index(drop=True)
 
-    for driver_id, group in ordered.groupby("driver_id", sort=False):
-        values = group["driver_prior_starts"].astype(float)
-        if not values.is_monotonic_increasing:
-            raise AssertionError(
-                f"driver_prior_starts decreases for driver {driver_id}"
-            )
+    expected = ordered.groupby("driver_id", sort=False).cumcount()
+    actual = ordered["driver_prior_starts"].astype("int64")
+
+    mismatches = ordered.loc[
+        actual.ne(expected),
+        [
+            "season",
+            "round",
+            "driver_id",
+            "prediction_time",
+            "driver_prior_starts",
+        ],
+    ].copy()
+
+    if not mismatches.empty:
+        mismatches["expected_prior_starts"] = expected.loc[mismatches.index].to_numpy()
+        first = mismatches.iloc[0]
+        raise AssertionError(
+            "driver_prior_starts is inconsistent with the global chronological "
+            "history. This usually means the feature Parquet was generated "
+            "before the cross-season history fix. "
+            f"First mismatch: driver={first['driver_id']}, "
+            f"season={first['season']}, round={first['round']}, "
+            f"actual={first['driver_prior_starts']}, "
+            f"expected={first['expected_prior_starts']}"
+        )
 
 
 def check_prior_features_absent_before_history(frame: pd.DataFrame) -> None:
