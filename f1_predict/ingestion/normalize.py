@@ -187,10 +187,43 @@ def normalize_season(year: int) -> list[Path]:
     ]
 
 
+def normalize_range(start_year: int, end_year: int, pause_seconds: float = 0.5) -> dict[int, list[Path]]:
+    """Normalize multiple already-ingested Jolpica seasons."""
+    import time
+
+    if start_year > end_year:
+        raise ValueError("start_year must be <= end_year")
+    if pause_seconds < 0:
+        raise ValueError("pause_seconds must be >= 0")
+
+    completed: dict[int, list[Path]] = {}
+    for year in range(start_year, end_year + 1):
+        print(f"\n=== Normalize Jolpica {year} ===")
+        completed[year] = normalize_season(year)
+        if year < end_year and pause_seconds:
+            time.sleep(pause_seconds)
+    return completed
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Normalize Jolpica raw season data into Parquet tables.")
-    parser.add_argument("--year", type=int, required=True)
+    parser.add_argument("--year", type=int)
+    parser.add_argument("--start-year", type=int)
+    parser.add_argument("--end-year", type=int)
+    parser.add_argument("--pause-seconds", type=float, default=0.5)
     args = parser.parse_args()
+
+    range_mode = args.start_year is not None or args.end_year is not None
+    if range_mode and (args.start_year is None or args.end_year is None):
+        parser.error("--start-year and --end-year must be provided together")
+    if not range_mode and args.year is None:
+        parser.error("--year is required unless --start-year and --end-year are provided")
+
+    if range_mode:
+        results = normalize_range(args.start_year, args.end_year, args.pause_seconds)
+        print("\nMulti-season normalization complete:")
+        for year, paths in results.items():
+            print(f"  {year}: {len(paths)} files")
+        return
 
     print("Normalization complete:")
     for path in normalize_season(args.year):
