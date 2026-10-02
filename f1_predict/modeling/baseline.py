@@ -75,11 +75,18 @@ def predict_race_probabilities(
             group["win_probability"] = group["raw_win_probability"] / total
         return group
 
-    return (
-        result.groupby(["season", "round"], group_keys=False)
-        .apply(normalize, include_groups=True)
-        .reset_index(drop=True)
+    result["race_probability_total"] = result.groupby(
+        ["season", "round"]
+    )["raw_win_probability"].transform("sum")
+
+    result["win_probability"] = np.where(
+        result["race_probability_total"] > 0
+        & np.isfinite(result["race_probability_total"]),
+        result["raw_win_probability"] / result["race_probability_total"],
+        1.0 / result.groupby(["season", "round"])["driver_id"].transform("count"),
     )
+
+    return result.drop(columns=["race_probability_total"])
 
 
 def evaluate_race_probabilities(
