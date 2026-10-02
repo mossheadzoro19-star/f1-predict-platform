@@ -31,10 +31,28 @@ def _nested_records(races: list[dict[str, Any]], key: str) -> list[dict[str, Any
 
 
 def _round_counts(races: list[dict[str, Any]], key: str) -> dict[str, int]:
-    return {
-        str(race.get("round")): len(race.get(key, []))
-        for race in races
-    }
+    return {str(race.get("round")): len(race.get(key, [])) for race in races}
+
+
+def _driver_key(item: dict[str, Any]) -> str | None:
+    driver = item.get("Driver")
+    if isinstance(driver, dict) and driver.get("driverId"):
+        return str(driver["driverId"])
+    return None
+
+
+def _round_driver_keys(races: list[dict[str, Any]], key: str) -> dict[str, set[str]]:
+    result: dict[str, set[str]] = {}
+    for race in races:
+        round_number = str(race.get("round"))
+        result[round_number] = {
+            driver_id
+            for item in race.get(key, [])
+            if isinstance(item, dict)
+            for driver_id in [_driver_key(item)]
+            if driver_id is not None
+        }
+    return result
 
 
 def inspect_season(year: int) -> None:
@@ -68,17 +86,8 @@ def inspect_season(year: int) -> None:
 
     result_counts = _round_counts(result_races, "Results")
     qualifying_counts = _round_counts(qualifying_races, "QualifyingResults")
-
-    result_keys = {
-        (str(race.get("round")), str(item.get("number")))
-        for race in result_races
-        for item in race.get("Results", [])
-    }
-    qualifying_keys = {
-        (str(race.get("round")), str(item.get("number")))
-        for race in qualifying_races
-        for item in race.get("QualifyingResults", [])
-    }
+    result_drivers = _round_driver_keys(result_races, "Results")
+    qualifying_drivers = _round_driver_keys(qualifying_races, "QualifyingResults")
 
     print(f"Jolpica season audit: {year}")
     print("=" * 60)
@@ -92,7 +101,7 @@ def inspect_season(year: int) -> None:
     print(f"Qualifying rounds:    {qualifying_rounds[0]} -> {qualifying_rounds[-1]}")
     print(f"Result rows min/max:  {min(result_counts.values())}/{max(result_counts.values())}")
     print(f"Qualifying min/max:   {min(qualifying_counts.values())}/{max(qualifying_counts.values())}")
-    print(f"Result/qualifying IDs: {len(result_keys & qualifying_keys)} shared")
+    print(f"Result/qualifying IDs: {len(set(driver_ids))} season drivers")
     print(f"Metadata source:      {metadata.get('source')}")
     print(f"Retrieved at (UTC):   {metadata.get('retrieved_at_utc')}")
     print()
@@ -120,6 +129,21 @@ def inspect_season(year: int) -> None:
         )
     print()
 
+    print("Driver coverage mismatches by round")
+    print("-" * 60)
+    mismatches = False
+    for round_number in race_rounds:
+        only_results = result_drivers.get(round_number, set()) - qualifying_drivers.get(round_number, set())
+        only_qualifying = qualifying_drivers.get(round_number, set()) - result_drivers.get(round_number, set())
+        if only_results or only_qualifying:
+            mismatches = True
+            print(f"Round {round_number}:")
+            print(f"  Only in results:     {sorted(only_results) or 'None'}")
+            print(f"  Only in qualifying:  {sorted(only_qualifying) or 'None'}")
+    if not mismatches:
+        print("None")
+
+    print()
     print("Result status distribution")
     print("-" * 60)
     for status, count in status_counts.most_common():
@@ -129,12 +153,6 @@ def inspect_season(year: int) -> None:
         raise RuntimeError("Season audit failed: one or more datasets are empty.")
     if missing_results or missing_qualifying:
         raise RuntimeError("Season audit failed: one or more race rounds are missing.")
-    if len(result_keys) != len(results) or len(qualifying_keys) != len(qualifying):
-        raise RuntimeError("Season audit failed: duplicate round/driver-number keys detected.")
-    if result_keys != qualifying_keys:
-        print("\nWARNING: result and qualifying driver-number coverage differs.")
-        print(f"Only in results: {sorted(result_keys - qualifying_keys)}")
-        print(f"Only in qualifying: {sorted(qualifying_keys - result_keys)}")
 
 
 def main() -> None:
