@@ -92,7 +92,7 @@ def test_prior_counts_are_monotonic():
 def test_decreasing_prior_count_is_rejected():
     frame = _valid_frame()
     frame.loc[2, "driver_prior_starts"] = -1
-    with pytest.raises(AssertionError, match="decreases"):
+    with pytest.raises(AssertionError, match="inconsistent"):
         check_prior_counts_monotonic(frame)
 
 
