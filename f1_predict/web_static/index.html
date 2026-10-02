@@ -80,7 +80,7 @@ async function loadSnapshot(offset=null){
   const url=offset===null?"/api/snapshot":"/api/snapshot?replay_offset_seconds="+encodeURIComponent(offset);
   const response=await fetch(url,{cache:"no-store"});const data=await response.json();
   status.textContent=data.mode;
-  replayMode=data.mode==="REPLAY";
+  replayMode=data.mode==="REPLAY" && data.replay_available===true;
   const session=data.session||{},state=data.race_state||{};
   document.getElementById("event").textContent=session.meeting_name||session.location||((session.year||"")+" "+(session.session_name||""));
   document.getElementById("session").textContent=(session.session_name||"")+" · source: "+data.source;
@@ -100,20 +100,25 @@ async function loadSnapshot(offset=null){
     "<span>Air <strong>"+(w.air_temperature??"—")+"°C</strong></span><span>Track <strong>"+(w.track_temperature??"—")+"°C</strong></span><span>Humidity <strong>"+(w.humidity??"—")+"%</strong></span><span>Rain <strong>"+(w.rainfall?"YES":"NO")+"</strong></span>":
     "No weather observation.";
   if(replayMode){
-    document.getElementById("replayControls").style.display="flex";
     const start=new Date(session.date_start).getTime(),end=new Date(session.date_end||session.date_start).getTime();
-    replayMax=Math.max(1,Math.round((end-start)/1000));
-    const slider=document.getElementById("replaySlider");slider.max=replayMax;
-    if(offset!==null) slider.value=Math.min(replayMax,Math.max(0,offset));
-    document.getElementById("replayTime").textContent=Math.round(offset??replayOffset)+"s";
-    if(offset===null){
-      replayOffset=0;
-      return loadSnapshot(0);
+    if(!Number.isFinite(start)||!Number.isFinite(end)||end<start){
+      replayMode=false;
+      document.getElementById("replayControls").style.display="none";
+    }else{
+      document.getElementById("replayControls").style.display="flex";
+      replayMax=Math.max(1,Math.round((end-start)/1000));
+      const slider=document.getElementById("replaySlider");slider.max=replayMax;
+      if(offset!==null) slider.value=Math.min(replayMax,Math.max(0,offset));
+      document.getElementById("replayTime").textContent=Math.round(offset??replayOffset)+"s";
+      if(offset===null){
+        replayOffset=0;
+        return loadSnapshot(0);
+      }
     }
   }else{
     document.getElementById("replayControls").style.display="none";
   }
- }catch(error){status.textContent="OFFLINE";document.getElementById("note").textContent=String(error);}
+ }catch(error){status.textContent="OFFLINE";document.getElementById("note").textContent=String(error);document.getElementById("replayControls").style.display="none";}
 }
 function toggleReplay(){
  replayPlaying=!replayPlaying;document.getElementById("playButton").textContent=replayPlaying?"PAUSE REPLAY":"PLAY REPLAY";
