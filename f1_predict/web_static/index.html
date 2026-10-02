@@ -106,6 +106,10 @@ async function loadSnapshot(offset=null){
     const slider=document.getElementById("replaySlider");slider.max=replayMax;
     if(offset!==null) slider.value=Math.min(replayMax,Math.max(0,offset));
     document.getElementById("replayTime").textContent=Math.round(offset??replayOffset)+"s";
+    if(offset===null){
+      replayOffset=0;
+      return loadSnapshot(0);
+    }
   }else{
     document.getElementById("replayControls").style.display="none";
   }
