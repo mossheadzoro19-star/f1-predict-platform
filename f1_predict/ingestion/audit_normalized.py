@@ -147,11 +147,54 @@ def audit_normalized_season(year: int) -> None:
     print("Normalized data audit: PASS")
 
 
+def audit_range(start_year: int, end_year: int) -> None:
+    if start_year > end_year:
+        raise ValueError("start_year must be <= end_year")
+
+    passed: list[int] = []
+    failed: list[tuple[int, str]] = []
+
+    for year in range(start_year, end_year + 1):
+        try:
+            audit_normalized_season(year)
+            passed.append(year)
+            print(f"\nNORMALIZED AUDIT {year}: PASS")
+        except Exception as exc:
+            failed.append((year, str(exc)))
+            print(f"\nNORMALIZED AUDIT {year}: FAIL — {exc}")
+
+    print("\n" + "=" * 60)
+    print("Historical normalized-data audit")
+    print("=" * 60)
+    print(f"Seasons checked: {len(passed) + len(failed)}")
+    print(f"Seasons passed:  {len(passed)}")
+    print(f"Seasons failed:  {len(failed)}")
+    if failed:
+        print("\nFailures")
+        print("-" * 60)
+        for year, error in failed:
+            print(f"{year}: {error}")
+        raise RuntimeError("Historical normalized-data audit failed.")
+    print("\nNORMALIZED DATASET AUDIT: PASS")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Audit normalized Jolpica Parquet tables.")
-    parser.add_argument("--year", type=int, required=True)
+    parser.add_argument("--year", type=int)
+    parser.add_argument("--start-year", type=int)
+    parser.add_argument("--end-year", type=int)
     args = parser.parse_args()
-    audit_normalized_season(args.year)
+
+    range_mode = args.start_year is not None or args.end_year is not None
+    if range_mode and (args.start_year is None or args.end_year is None):
+        parser.error("--start-year and --end-year must be provided together")
+    if not range_mode and args.year is None:
+        parser.error("--year is required unless --start-year and --end-year are provided")
+
+    if range_mode:
+        audit_range(args.start_year, args.end_year)
+    else:
+        audit_normalized_season(args.year)
 
 
 if __name__ == "__main__":
