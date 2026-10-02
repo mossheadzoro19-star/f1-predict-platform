@@ -50,3 +50,25 @@ python -m f1_predict.ingestion.historical --year 2025 --source jolpica
 ```
 
 See `docs/DATA_PROVENANCE.md` and `docs/ROADMAP.md` before using data in a public/commercial deployment.
+
+
+## Run the race-intelligence website
+
+Install the runtime and start the MVP dashboard:
+
+~~~bash
+pip install -e ".[dev]"
+make web
+~~~
+
+Open the forwarded port **8000** in Codespaces.
+
+The website has three runtime behaviors:
+
+- **LIVE** — when an active OpenF1 race session is available.
+- **REPLAY** — when the provider exposes a historical race session or live data is unavailable.
+- **Fallback** — the latest historical ML prediction remains available if the provider cannot be reached.
+
+The current MVP combines the historical ML winner probability with live/replayed track-position evidence. This is deliberately an operational first version; the live-state model will be trained and evaluated separately before we replace this overlay with a learned race-state model.
+
+OpenF1 currently documents historical access as free and real-time access as requiring the appropriate live-data access/subscription. Keep `OPENF1_API_TOKEN` on the backend and never expose it in frontend code.
