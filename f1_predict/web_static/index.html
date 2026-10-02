@@ -122,7 +122,7 @@ function toggleReplay(){
  }else clearInterval(replayTimer);
 }
 function scrubReplay(value){replayOffset=Number(value);loadSnapshot(replayOffset);}
-function escapeHtml(value){return String(value).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",""":"&quot;","'":"&#039;"}[c];});}
+function escapeHtml(value){return String(value).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c];});}
 loadSnapshot();setInterval(function(){if(!replayPlaying)loadSnapshot(replayMode?replayOffset:null);},10000);
 </script>
 </body>
