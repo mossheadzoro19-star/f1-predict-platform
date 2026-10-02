@@ -77,7 +77,7 @@ def predict_race_probabilities(
 
     return (
         result.groupby(["season", "round"], group_keys=False)
-        .apply(normalize, include_groups=False)
+        .apply(normalize, include_groups=True)
         .reset_index(drop=True)
     )
 
