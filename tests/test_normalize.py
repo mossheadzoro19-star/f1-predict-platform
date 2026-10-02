@@ -57,7 +57,7 @@ def _payload():
     }
     return (
         {"MRData": {"RaceTable": {"Races": [{**races[0], "Results": [result]}]}}},
-        {"MRData": {"RaceTable": {"Races": [{**races[0], "QualifyingResults": [qualifying]}]}},
+        {"MRData": {"RaceTable": {"Races": [{**races[0], "QualifyingResults": [qualifying]}]}}},
     )
 
 
