@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -67,15 +68,49 @@ def ingest_openf1(year: int) -> list[Path]:
     return [path, metadata]
 
 
+def ingest_jolpica_range(start_year: int, end_year: int, pause_seconds: float = 2.0) -> dict[int, list[Path]]:
+    """Ingest multiple Jolpica seasons with a pause between seasons."""
+    if start_year > end_year:
+        raise ValueError("start_year must be <= end_year")
+    if pause_seconds < 0:
+        raise ValueError("pause_seconds must be >= 0")
+
+    completed: dict[int, list[Path]] = {}
+    for year in range(start_year, end_year + 1):
+        print(f"\n=== Jolpica {year} ===")
+        completed[year] = ingest_jolpica(year)
+        cleanup_legacy_jolpica_files(year)
+        if year < end_year and pause_seconds:
+            time.sleep(pause_seconds)
+    return completed
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Ingest historical F1 data.")
-    parser.add_argument("--year", type=int, required=True)
+    parser.add_argument("--year", type=int)
+    parser.add_argument("--start-year", type=int)
+    parser.add_argument("--end-year", type=int)
+    parser.add_argument("--pause-seconds", type=float, default=2.0)
     parser.add_argument(
         "--source",
         choices=("jolpica", "openf1", "both"),
-        default="both",
+        default="jolpica",
     )
     args = parser.parse_args()
+
+    range_mode = args.start_year is not None or args.end_year is not None
+    if range_mode and (args.start_year is None or args.end_year is None):
+        parser.error("--start-year and --end-year must be provided together")
+    if not range_mode and args.year is None:
+        parser.error("--year is required unless --start-year and --end-year are provided")
+    if range_mode and args.source != "jolpica":
+        parser.error("multi-season mode currently supports --source jolpica only")
+
+    if range_mode:
+        results = ingest_jolpica_range(args.start_year, args.end_year, args.pause_seconds)
+        print("\nMulti-season ingestion complete:")
+        for year, paths in results.items():
+            print(f"  {year}: {len(paths)} files")
+        return
 
     paths: list[Path] = []
     if args.source in ("jolpica", "both"):
