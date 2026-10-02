@@ -21,6 +21,7 @@ class RaceSnapshot:
     session: dict[str, Any]
     updated_at: str
     drivers: list[dict[str, Any]]
+    race_state: dict[str, Any]
     note: str
 
 
@@ -73,7 +74,8 @@ class RaceIntelligenceService:
         now = datetime.now(timezone.utc)
         sessions = self.client.get_sessions(now.year)
         races = [
-            item for item in sessions
+            item
+            for item in sessions
             if item.get("session_name") == "Race"
             and not item.get("is_cancelled", False)
         ]
@@ -91,10 +93,196 @@ class RaceIntelligenceService:
             for session in races
             if (start := _parse_datetime(session.get("date_start"))) and start <= now
         ]
-        return max(completed, key=lambda item: item.get("date_start", "")) if completed else None
+        return (
+            max(completed, key=lambda item: item.get("date_start", ""))
+            if completed
+            else None
+        )
 
-    def snapshot(self) -> RaceSnapshot:
-        """Return live state when possible, otherwise a deterministic replay."""
+    def _select_latest_by_driver(
+        self,
+        rows: list[dict[str, Any]],
+        timestamp_key: str,
+        target_time: datetime,
+        driver_key: str = "driver_number",
+    ) -> dict[int, dict[str, Any]]:
+        """Select each driver's latest observation at or before target_time."""
+        latest: dict[int, dict[str, Any]] = {}
+        for item in rows:
+            number = item.get(driver_key)
+            timestamp = _parse_datetime(item.get(timestamp_key))
+            if number is None or timestamp is None or timestamp > target_time:
+                continue
+            number = int(number)
+            previous = latest.get(number)
+            if previous is None or timestamp >= _parse_datetime(
+                previous.get(timestamp_key)
+            ):
+                latest[number] = item
+        return latest
+
+    def _expected_laps(
+        self,
+        session: dict[str, Any],
+        results: list[dict[str, Any]],
+        laps: list[dict[str, Any]],
+    ) -> tuple[int | None, str]:
+        """Resolve race length from final results, then recent same-location history."""
+        if results:
+            counts = [
+                int(item["number_of_laps"])
+                for item in results
+                if item.get("number_of_laps") is not None
+            ]
+            if counts:
+                return max(counts), "OpenF1 session result"
+
+        observed = [
+            int(item["lap_number"])
+            for item in laps
+            if item.get("lap_number") is not None
+        ]
+        if observed and session.get("date_end"):
+            end = _parse_datetime(session.get("date_end"))
+            if end and end <= datetime.now(timezone.utc):
+                return max(observed), "OpenF1 historical laps"
+
+        # For a live race, session_result is not normally published yet.
+        # Use the most recent completed race at the same circuit as a target.
+        location = session.get("location")
+        year = int(session.get("year", datetime.now(timezone.utc).year))
+        if location:
+            for prior_year in range(year - 1, max(year - 4, 2022) - 1, -1):
+                try:
+                    prior = [
+                        item
+                        for item in self.client.get_sessions(prior_year)
+                        if item.get("session_name") == "Race"
+                        and item.get("location") == location
+                        and not item.get("is_cancelled", False)
+                    ]
+                    if not prior:
+                        continue
+                    prior_session = max(
+                        prior, key=lambda item: item.get("date_start", "")
+                    )
+                    prior_results = self.client.get_session_result(
+                        int(prior_session["session_key"])
+                    )
+                    counts = [
+                        int(item["number_of_laps"])
+                        for item in prior_results
+                        if item.get("number_of_laps") is not None
+                    ]
+                    if counts:
+                        return max(counts), "Same-circuit historical target"
+                except Exception:
+                    continue
+
+        return None, "Unknown"
+
+    def _race_state(
+        self,
+        session: dict[str, Any],
+        target_time: datetime,
+        positions: list[dict[str, Any]],
+        intervals: list[dict[str, Any]],
+        laps: list[dict[str, Any]],
+        stints: list[dict[str, Any]],
+        weather: list[dict[str, Any]],
+        results: list[dict[str, Any]],
+    ) -> tuple[dict[int, int], dict[int, dict[str, Any]], dict[str, Any]]:
+        latest_positions = self._select_latest_by_driver(
+            positions, "date", target_time
+        )
+        latest_intervals = self._select_latest_by_driver(
+            intervals, "date", target_time
+        )
+
+        latest_laps = self._select_latest_by_driver(
+            laps, "date_start", target_time
+        )
+        current_lap = (
+            max(
+                int(item["lap_number"])
+                for item in latest_laps.values()
+                if item.get("lap_number") is not None
+            )
+            if latest_laps
+            else 0
+        )
+
+        lap_target, target_source = self._expected_laps(session, results, laps)
+        laps_to_go = (
+            max(lap_target - current_lap, 0)
+            if lap_target is not None and current_lap
+            else None
+        )
+
+        latest_stints: dict[int, dict[str, Any]] = {}
+        for item in stints:
+            number = item.get("driver_number")
+            lap_start = item.get("lap_start")
+            if number is None or lap_start is None or int(lap_start) > current_lap:
+                continue
+            number = int(number)
+            previous = latest_stints.get(number)
+            if previous is None or int(item["lap_start"]) > int(previous["lap_start"]):
+                latest_stints[number] = item
+
+        latest_weather: dict[str, Any] | None = None
+        for item in weather:
+            timestamp = _parse_datetime(item.get("date"))
+            if timestamp is None or timestamp > target_time:
+                continue
+            if latest_weather is None or timestamp >= _parse_datetime(
+                latest_weather.get("date")
+            ):
+                latest_weather = item
+
+        driver_state: dict[int, dict[str, Any]] = {}
+        for number, position_item in latest_positions.items():
+            interval_item = latest_intervals.get(number, {})
+            stint = latest_stints.get(number, {})
+            tyre_age = None
+            if stint.get("tyre_age_at_start") is not None and stint.get("lap_start") is not None:
+                tyre_age = (
+                    int(stint["tyre_age_at_start"])
+                    + max(current_lap - int(stint["lap_start"]), 0)
+                )
+            driver_state[number] = {
+                "gap_to_leader": interval_item.get("gap_to_leader"),
+                "interval": interval_item.get("interval"),
+                "compound": stint.get("compound"),
+                "tyre_age": tyre_age,
+            }
+
+        race_state = {
+            "current_lap": current_lap or None,
+            "total_laps": lap_target,
+            "laps_to_go": laps_to_go,
+            "lap_target_source": target_source,
+            "snapshot_time": target_time.isoformat(),
+            "weather": (
+                {
+                    "air_temperature": latest_weather.get("air_temperature"),
+                    "track_temperature": latest_weather.get("track_temperature"),
+                    "humidity": latest_weather.get("humidity"),
+                    "rainfall": latest_weather.get("rainfall"),
+                    "wind_speed": latest_weather.get("wind_speed"),
+                }
+                if latest_weather
+                else None
+            ),
+        }
+        return (
+            {number: int(item["position"]) for number, item in latest_positions.items()},
+            driver_state,
+            race_state,
+        )
+
+    def snapshot(self, replay_offset_seconds: float | None = None) -> RaceSnapshot:
+        """Return live state or a point-in-time historical replay snapshot."""
         try:
             session = self._find_race_session()
             if session is None:
@@ -103,12 +291,49 @@ class RaceIntelligenceService:
             session_key = int(session["session_key"])
             positions = self.client.get_positions(session_key)
             drivers = self.client.get_drivers(session_key)
-            driver_map = {int(item["driver_number"]): item for item in drivers}
+            intervals = self.client.get_intervals(session_key)
+            laps = self.client.get_laps(session_key)
+            stints = self.client.get_stints(session_key)
+            weather = self.client.get_weather(session_key)
+
+            try:
+                results = self.client.get_session_result(session_key)
+            except Exception:
+                results = []
 
             now = datetime.now(timezone.utc)
             start = _parse_datetime(session.get("date_start"))
             end = _parse_datetime(session.get("date_end"))
             is_live = bool(start and end and start <= now <= end)
+
+            if is_live:
+                target_time = now
+            elif start and replay_offset_seconds is not None:
+                max_offset = max(
+                    0.0,
+                    (
+                        (end - start).total_seconds()
+                        if end and end > start
+                        else 0.0
+                    ),
+                )
+                target_time = start + pd.to_timedelta(
+                    min(max(replay_offset_seconds, 0.0), max_offset), unit="s"
+                ).to_pytimedelta()
+            else:
+                target_time = end or now
+
+            latest_positions, driver_state, race_state = self._race_state(
+                session,
+                target_time,
+                positions,
+                intervals,
+                laps,
+                stints,
+                weather,
+                results,
+            )
+            driver_map = {int(item["driver_number"]): item for item in drivers}
 
             identity = self._driver_identity()
             code_to_prior: dict[str, float] = {}
@@ -117,13 +342,6 @@ class RaceIntelligenceService:
                 code = info.get("code")
                 if code:
                     code_to_prior[str(code).upper()] = float(probability)
-
-            latest_positions: dict[int, int] = {}
-            for item in positions:
-                number = item.get("driver_number")
-                position = item.get("position")
-                if number is not None and position is not None:
-                    latest_positions[int(number)] = int(position)
 
             if not latest_positions:
                 return self._replay_fallback("OpenF1 returned no race positions.")
@@ -134,6 +352,7 @@ class RaceIntelligenceService:
                 info = driver_map.get(number, {})
                 code = str(info.get("name_acronym", "")).upper()
                 prior = code_to_prior.get(code, 1.0 / field_size)
+                state = driver_state.get(number, {})
                 raw.append(
                     {
                         "driver_number": number,
@@ -143,6 +362,7 @@ class RaceIntelligenceService:
                         "prior_probability": prior,
                         "raw_probability": prior * live_position_weight(position),
                         "team": info.get("team_name"),
+                        **state,
                     }
                 )
 
@@ -153,18 +373,23 @@ class RaceIntelligenceService:
                 )
 
             raw.sort(key=lambda item: item["win_probability"], reverse=True)
-            mode = "LIVE" if is_live else "REPLAY"
+            mode = "LIVE" if is_live and replay_offset_seconds is None else "REPLAY"
             note = (
-                "Historical ML prior + current OpenF1 race-position evidence."
-                if is_live
-                else "Historical OpenF1 race replay + historical ML prior."
+                "Historical ML prior + current OpenF1 race-state evidence."
+                if mode == "LIVE"
+                else "Historical OpenF1 point-in-time replay + historical ML prior."
+            )
+            session_view = dict(session)
+            session_view["replay_offset_seconds"] = (
+                replay_offset_seconds if mode == "REPLAY" else None
             )
             return RaceSnapshot(
                 mode=mode,
                 source="OpenF1",
-                session=session,
+                session=session_view,
                 updated_at=datetime.now(timezone.utc).isoformat(),
                 drivers=raw,
+                race_state=race_state,
                 note=note,
             )
         except Exception as exc:
@@ -192,6 +417,10 @@ class RaceIntelligenceService:
                     "prior_probability": probability,
                     "win_probability": probability,
                     "team": None,
+                    "gap_to_leader": None,
+                    "interval": None,
+                    "compound": None,
+                    "tyre_age": None,
                 }
             )
         rows.sort(key=lambda item: item["win_probability"], reverse=True)
@@ -205,6 +434,14 @@ class RaceIntelligenceService:
             },
             updated_at=datetime.now(timezone.utc).isoformat(),
             drivers=rows,
+            race_state={
+                "current_lap": None,
+                "total_laps": None,
+                "laps_to_go": None,
+                "lap_target_source": "Unknown",
+                "snapshot_time": datetime.now(timezone.utc).isoformat(),
+                "weather": None,
+            },
             note=note,
         )
 
