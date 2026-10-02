@@ -256,6 +256,7 @@ class RaceIntelligenceService:
 
     def snapshot(self, replay_offset_seconds: float | None = None) -> RaceSnapshot:
         """Return live state or a point-in-time historical replay snapshot."""
+        session: dict[str, Any] | None = None
         try:
             session = self._find_race_session()
             if session is None:
@@ -267,7 +268,8 @@ class RaceIntelligenceService:
                 drivers = self.client.get_drivers(session_key)
             except Exception:
                 return self._replay_fallback(
-                    "OpenF1 driver metadata unavailable; historical replay fallback active."
+                    "OpenF1 driver metadata unavailable; model fallback active.",
+                    session=session,
                 )
 
             optional_fetchers = {
@@ -342,7 +344,10 @@ class RaceIntelligenceService:
                     code_to_prior[str(code).upper()] = float(probability)
 
             if not latest_positions:
-                return self._replay_fallback("OpenF1 returned no race positions.")
+                return self._replay_fallback(
+                    "OpenF1 returned no race positions; model fallback active.",
+                    session=session,
+                )
 
             raw: list[dict[str, Any]] = []
             field_size = len(latest_positions)
@@ -393,10 +398,15 @@ class RaceIntelligenceService:
             )
         except Exception as exc:
             return self._replay_fallback(
-                f"Live provider unavailable; replay fallback active: {exc}"
+                f"OpenF1 unavailable; model fallback active: {exc}",
+                session=session,
             )
 
-    def _replay_fallback(self, note: str) -> RaceSnapshot:
+    def _replay_fallback(
+        self,
+        note: str,
+        session: dict[str, Any] | None = None,
+    ) -> RaceSnapshot:
         """Serve the latest historical model prediction when live data is unavailable."""
         latest = self.features[
             self.features["season"].eq(self.model_season)
@@ -423,14 +433,19 @@ class RaceIntelligenceService:
                 }
             )
         rows.sort(key=lambda item: item["win_probability"], reverse=True)
+        fallback_session = dict(session) if session is not None else {
+            "year": self.model_season,
+            "session_name": "Historical model fallback",
+            "session_key": None,
+        }
+        fallback_session.setdefault("year", self.model_season)
+        fallback_session.setdefault("session_name", "Historical model fallback")
+        fallback_session.setdefault("session_key", None)
+
         return RaceSnapshot(
-            mode="REPLAY",
+            mode="FALLBACK",
             source="historical dataset",
-            session={
-                "year": self.model_season,
-                "session_name": "Historical pre-race replay",
-                "session_key": None,
-            },
+            session=fallback_session,
             updated_at=datetime.now(timezone.utc).isoformat(),
             drivers=rows,
             race_state={
