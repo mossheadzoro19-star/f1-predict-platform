@@ -79,6 +79,7 @@ def _add_prior_count(
 
 
 def _prepare_season(year: int) -> pd.DataFrame:
+    """Prepare one season without calculating historical features."""
     data = _read_season(year)
     races = data["races"].copy()
     results = data["race_results"].copy()
@@ -126,10 +127,19 @@ def _prepare_season(year: int) -> pd.DataFrame:
     frame["winner"] = (frame["position"] == 1).astype("int8")
     frame["finish_position_numeric"] = pd.to_numeric(frame["position"], errors="coerce")
     frame["field_size"] = frame.groupby(["season", "round"])["driver_id"].transform("size")
+    return frame
 
-    # Every historical statistic below is computed from prior races only.
-    frame = frame.sort_values(["prediction_time", "season", "round", "driver_id"]).reset_index(drop=True)
 
+def _add_historical_features(frame: pd.DataFrame) -> pd.DataFrame:
+    """Calculate all historical features across the complete global timeline."""
+    frame = frame.copy()
+    frame = frame.sort_values(
+        ["prediction_time", "season", "round", "driver_id"]
+    ).reset_index(drop=True)
+
+    # These statistics are intentionally calculated only after all seasons
+    # have been concatenated. This preserves driver/constructor history across
+    # season boundaries (for example, 2024 -> 2025).
     frame = _add_prior_rolling(
         frame, "driver_id", "finish_position_numeric", "driver_finish_position"
     )
@@ -145,7 +155,6 @@ def _prepare_season(year: int) -> pd.DataFrame:
     )
     frame = _add_prior_count(frame, "constructor_id", "constructor_prior_starts")
 
-    # Circuit history is intentionally prior-only as well.
     frame = _add_prior_rolling(
         frame, ["driver_id", "circuit_id"], "finish_position_numeric", "driver_circuit_finish"
     )
@@ -166,12 +175,9 @@ def build_point_in_time_features(
     frames = [_prepare_season(year) for year in range(start_year, end_year + 1)]
     result = pd.concat(frames, ignore_index=True)
 
-    # Re-sort globally before final checks/output.
-    result = result.sort_values(
-        ["prediction_time", "season", "round", "driver_id"]
-    ).reset_index(drop=True)
-
-    return result
+    # Historical features must be computed after concatenating all seasons.
+    # Otherwise every season would incorrectly reset prior driver/constructor history.
+    return _add_historical_features(result)
 
 
 def validate_point_in_time_features(frame: pd.DataFrame) -> None:
