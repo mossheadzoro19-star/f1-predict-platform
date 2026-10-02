@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -31,13 +31,18 @@ def health() -> dict[str, str]:
 
 
 @app.get("/api/snapshot")
-def snapshot() -> dict:
-    result = service.snapshot()
+def snapshot(
+    replay_offset_seconds: float | None = Query(
+        default=None, ge=0, description="Point-in-time replay offset from race start."
+    )
+) -> dict:
+    result = service.snapshot(replay_offset_seconds=replay_offset_seconds)
     return {
         "mode": result.mode,
         "source": result.source,
         "session": result.session,
         "updated_at": result.updated_at,
         "drivers": result.drivers,
+        "race_state": result.race_state,
         "note": result.note,
     }
