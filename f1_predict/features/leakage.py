@@ -96,24 +96,63 @@ def check_prior_counts_monotonic(frame: pd.DataFrame) -> None:
 
 
 def check_prior_features_absent_before_history(frame: pd.DataFrame) -> None:
-    """A first-ever driver race cannot contain historical rolling/rate values."""
-    ordered = frame.sort_values(["prediction_time", "season", "round", "driver_id"])
-    first_rows = ordered.groupby("driver_id", sort=False).head(1)
+    """Historical features are missing only when their own entity has no history."""
+    ordered = frame.sort_values(
+        ["prediction_time", "season", "round", "driver_id"]
+    ).reset_index(drop=True)
 
-    historical_cols = [
-        column
-        for column in PRIOR_FEATURES
-        if column in first_rows.columns and column != "driver_prior_starts"
+    # Driver-level history: absent on a driver's first observed race.
+    first_driver_rows = ordered.groupby("driver_id", sort=False).head(1)
+    driver_cols = [
+        "driver_finish_position_last_3",
+        "driver_finish_position_last_5",
+        "driver_points_last_3",
+        "driver_points_last_5",
+        "driver_prior_win_rate",
     ]
-
-    for column in historical_cols:
-        if first_rows[column].notna().any():
-            bad = first_rows.loc[
-                first_rows[column].notna(),
+    for column in driver_cols:
+        if column in ordered.columns and first_driver_rows[column].notna().any():
+            bad = first_driver_rows.loc[
+                first_driver_rows[column].notna(),
                 ["season", "round", "driver_id", column],
             ]
             raise AssertionError(
                 f"First driver race contains historical value in {column}:\n{bad}"
+            )
+
+    # Constructor-level history belongs to the constructor, not the driver.
+    first_constructor_rows = ordered.groupby("constructor_id", sort=False).head(1)
+    constructor_cols = [
+        "constructor_points_last_3",
+        "constructor_points_last_5",
+        "constructor_prior_win_rate",
+    ]
+    for column in constructor_cols:
+        if column in ordered.columns and first_constructor_rows[column].notna().any():
+            bad = first_constructor_rows.loc[
+                first_constructor_rows[column].notna(),
+                ["season", "round", "constructor_id", column],
+            ]
+            raise AssertionError(
+                f"First constructor race contains historical value in {column}:\n{bad}"
+            )
+
+    # Circuit history belongs to the driver + circuit pair.
+    first_circuit_rows = ordered.groupby(
+        ["driver_id", "circuit_id"], sort=False
+    ).head(1)
+    circuit_cols = [
+        "driver_circuit_finish_last_3",
+        "driver_circuit_finish_last_5",
+    ]
+    for column in circuit_cols:
+        if column in ordered.columns and first_circuit_rows[column].notna().any():
+            bad = first_circuit_rows.loc[
+                first_circuit_rows[column].notna(),
+                ["season", "round", "driver_id", "circuit_id", column],
+            ]
+            raise AssertionError(
+                f"First driver-circuit race contains historical value in {column}:\n{bad}"
             )
 
 
