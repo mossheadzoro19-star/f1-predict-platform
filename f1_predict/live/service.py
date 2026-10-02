@@ -24,6 +24,7 @@ class RaceSnapshot:
     drivers: list[dict[str, Any]]
     race_state: dict[str, Any]
     note: str
+    replay_available: bool
 
 
 def live_position_weight(position: int | None) -> float:
@@ -388,6 +389,7 @@ class RaceIntelligenceService:
                 drivers=raw,
                 race_state=race_state,
                 note=note,
+                replay_available=True,
             )
         except Exception as exc:
             return self._replay_fallback(
@@ -440,6 +442,7 @@ class RaceIntelligenceService:
                 "weather": None,
             },
             note=note,
+            replay_available=False,
         )
 
 
