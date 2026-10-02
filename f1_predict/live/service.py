@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from math import exp
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 
 import pandas as pd
@@ -268,17 +269,34 @@ class RaceIntelligenceService:
                     "OpenF1 driver metadata unavailable; historical replay fallback active."
                 )
 
-            def optional(fetcher: Any) -> list[dict[str, Any]]:
-                try:
-                    return fetcher(session_key)
-                except Exception:
-                    return []
+            optional_fetchers = {
+                "intervals": self.client.get_intervals,
+                "laps": self.client.get_laps,
+                "stints": self.client.get_stints,
+                "weather": self.client.get_weather,
+                "results": self.client.get_session_result,
+            }
+            optional_data: dict[str, list[dict[str, Any]]] = {
+                key: [] for key in optional_fetchers
+            }
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                futures = {
+                    executor.submit(fetcher, session_key): key
+                    for key, fetcher in optional_fetchers.items()
+                }
+                for future in as_completed(futures):
+                    key = futures[future]
+                    try:
+                        optional_data[key] = future.result()
+                    except Exception:
+                        # Optional race-state signals must never block the dashboard.
+                        optional_data[key] = []
 
-            intervals = optional(self.client.get_intervals)
-            laps = optional(self.client.get_laps)
-            stints = optional(self.client.get_stints)
-            weather = optional(self.client.get_weather)
-            results = optional(self.client.get_session_result)
+            intervals = optional_data["intervals"]
+            laps = optional_data["laps"]
+            stints = optional_data["stints"]
+            weather = optional_data["weather"]
+            results = optional_data["results"]
 
             now = datetime.now(timezone.utc)
             start = _parse_datetime(session.get("date_start"))
