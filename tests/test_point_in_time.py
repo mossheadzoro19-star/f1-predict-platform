@@ -3,6 +3,7 @@ import pytest
 
 from f1_predict.features.point_in_time import (
     _add_constructor_history,
+    _add_historical_features,
     _parse_lap_time,
     validate_point_in_time_features,
 )
@@ -53,6 +54,77 @@ def test_constructor_history_uses_prior_races_only():
     assert (second_race["constructor_points_last_5"] == 8.0 / 1).all()
     assert (second_race["constructor_prior_win_rate"] == 1.0).all()
     assert (second_race["constructor_prior_starts"] == 1).all()
+
+
+def test_mutating_current_race_targets_cannot_change_current_features():
+    base = pd.DataFrame(
+        [
+            {
+                "season": 2024, "round": 1, "driver_id": "a", "constructor_id": "x",
+                "circuit_id": "c1", "prediction_time": pd.Timestamp("2024-03-01T12:00:00Z"),
+                "position": 1, "finish_position_numeric": 1.0, "points": 25.0, "winner": 1,
+            },
+            {
+                "season": 2024, "round": 1, "driver_id": "b", "constructor_id": "x",
+                "circuit_id": "c1", "prediction_time": pd.Timestamp("2024-03-01T12:00:00Z"),
+                "position": 2, "finish_position_numeric": 2.0, "points": 18.0, "winner": 0,
+            },
+            {
+                "season": 2024, "round": 2, "driver_id": "a", "constructor_id": "x",
+                "circuit_id": "c2", "prediction_time": pd.Timestamp("2024-03-08T12:00:00Z"),
+                "position": 2, "finish_position_numeric": 2.0, "points": 18.0, "winner": 0,
+            },
+            {
+                "season": 2024, "round": 2, "driver_id": "b", "constructor_id": "x",
+                "circuit_id": "c2", "prediction_time": pd.Timestamp("2024-03-08T12:00:00Z"),
+                "position": 1, "finish_position_numeric": 1.0, "points": 25.0, "winner": 1,
+            },
+            {
+                "season": 2024, "round": 3, "driver_id": "a", "constructor_id": "x",
+                "circuit_id": "c3", "prediction_time": pd.Timestamp("2024-03-15T12:00:00Z"),
+                "position": 3, "finish_position_numeric": 3.0, "points": 15.0, "winner": 0,
+            },
+            {
+                "season": 2024, "round": 3, "driver_id": "b", "constructor_id": "x",
+                "circuit_id": "c3", "prediction_time": pd.Timestamp("2024-03-15T12:00:00Z"),
+                "position": 4, "finish_position_numeric": 4.0, "points": 12.0, "winner": 0,
+            },
+        ]
+    )
+
+    mutated = base.copy()
+    race_two = mutated["round"] == 2
+    mutated.loc[race_two & (mutated["driver_id"] == "a"), ["position", "finish_position_numeric", "points", "winner"]] = [20, 20.0, 0.0, 0]
+    mutated.loc[race_two & (mutated["driver_id"] == "b"), ["position", "finish_position_numeric", "points", "winner"]] = [1, 1.0, 25.0, 1]
+
+    original_features = _add_historical_features(base)
+    mutated_features = _add_historical_features(mutated)
+
+    historical_columns = [
+        "driver_finish_position_last_3",
+        "driver_finish_position_last_5",
+        "driver_points_last_3",
+        "driver_points_last_5",
+        "driver_prior_win_rate",
+        "driver_prior_starts",
+        "constructor_points_last_3",
+        "constructor_points_last_5",
+        "constructor_prior_win_rate",
+        "constructor_prior_starts",
+        "driver_circuit_finish_last_3",
+        "driver_circuit_finish_last_5",
+        "driver_circuit_prior_starts",
+    ]
+
+    original_race_two = original_features.loc[original_features["round"] == 2, historical_columns].reset_index(drop=True)
+    mutated_race_two = mutated_features.loc[mutated_features["round"] == 2, historical_columns].reset_index(drop=True)
+
+    pd.testing.assert_frame_equal(original_race_two, mutated_race_two)
+
+    original_race_three = original_features.loc[original_features["round"] == 3, historical_columns].reset_index(drop=True)
+    mutated_race_three = mutated_features.loc[mutated_features["round"] == 3, historical_columns].reset_index(drop=True)
+
+    assert not original_race_three.equals(mutated_race_three)
 
 
 def test_validate_point_in_time_features_accepts_valid_race():
