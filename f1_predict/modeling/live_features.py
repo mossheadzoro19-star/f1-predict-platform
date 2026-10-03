@@ -78,11 +78,13 @@ def validate_live_feature_contract(
     if missing:
         raise ValueError(f"Missing live race-state columns: {missing}")
 
-    if frame[list(contract.numeric_features)].columns.duplicated().any():
-        raise ValueError("Duplicate numeric live feature columns detected")
+    numeric_duplicates = pd.Index(contract.numeric_features).duplicated().any()
+    if numeric_duplicates:
+        raise ValueError("Duplicate numeric live feature names detected")
 
-    if frame[list(contract.categorical_features)].columns.duplicated().any():
-        raise ValueError("Duplicate categorical live feature columns detected")
+    categorical_duplicates = pd.Index(contract.categorical_features).duplicated().any()
+    if categorical_duplicates:
+        raise ValueError("Duplicate categorical live feature names detected")
 
     target = pd.to_numeric(frame[contract.target], errors="coerce")
     if target.isna().any() or not target.isin([0, 1]).all():
