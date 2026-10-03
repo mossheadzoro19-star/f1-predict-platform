@@ -19,7 +19,9 @@ class OpenF1Client:
     retry_backoff_seconds: float = 5.0
     _last_request_at: float = field(default=0.0, init=False, repr=False)
 
-    def _headers(self) -> dict[str, str]:
+    def _headers(self, include_auth: bool = True) -> dict[str, str]:
+        if not include_auth:
+            return {}
         token = self.access_token or os.getenv("OPENF1_API_TOKEN")
         return {"Authorization": f"Bearer {token}"} if token else {}
 
@@ -41,6 +43,10 @@ class OpenF1Client:
 
     def _get_list(self, endpoint: str, params: dict[str, Any]) -> list[dict[str, Any]]:
         url = f"{self.base_url}/{endpoint}"
+        token = self.access_token or os.getenv("OPENF1_API_TOKEN")
+        use_auth = bool(token)
+        auth_fallback_used = False
+
         with httpx.Client(timeout=15.0, follow_redirects=True) as client:
             for attempt in range(self.max_retries + 1):
                 self._wait_for_rate_limit()
@@ -48,7 +54,7 @@ class OpenF1Client:
                     response = client.get(
                         url,
                         params=params,
-                        headers=self._headers(),
+                        headers=self._headers(include_auth=use_auth),
                     )
                     self._last_request_at = time.monotonic()
                 except httpx.HTTPError:
@@ -56,6 +62,17 @@ class OpenF1Client:
                     if attempt >= self.max_retries:
                         raise
                     time.sleep(self.retry_backoff_seconds * (2**attempt))
+                    continue
+
+                if response.status_code == 401 and use_auth and not auth_fallback_used:
+                    # Historical OpenF1 data is publicly accessible. If a stale
+                    # local token is configured, retry once without authentication.
+                    use_auth = False
+                    auth_fallback_used = True
+                    print(
+                        f"OpenF1 authentication rejected on /{endpoint}; "
+                        "retrying without authentication."
+                    )
                     continue
 
                 if response.status_code == 429:
