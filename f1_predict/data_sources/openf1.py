@@ -102,6 +102,10 @@ class OpenF1Client:
         """Return individual lap observations."""
         return self._get_list("laps", {"session_key": session_key})
 
+    def get_pit_stops(self, session_key: int) -> list[dict[str, Any]]:
+        """Return pit-lane events for a race session."""
+        return self._get_list("pit", {"session_key": session_key})
+
     def get_stints(self, session_key: int) -> list[dict[str, Any]]:
         """Return tyre stint observations."""
         return self._get_list("stints", {"session_key": session_key})
