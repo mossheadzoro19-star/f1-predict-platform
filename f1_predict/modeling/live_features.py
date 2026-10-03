@@ -91,7 +91,7 @@ def select_live_dataset(
     y = frame.loc[:, contract.target].astype("int8").copy()
 
     # Treat tyre compound as a categorical value, not an ordinal number.
-    X["stint_compound"] = X["stint_compound"].astype("string")
+    # Use plain object dtype with np.nan for sklearn compatibility. Pandas\n    # StringDtype uses pd.NA, which can reach SimpleImputer and make comparisons\n    # such as ``value != value`` ambiguous in some sklearn/pandas combinations.\n    X["stint_compound"] = X["stint_compound"].astype("object")\n    X["stint_compound"] = X["stint_compound"].where(X["stint_compound"].notna(), None)
 
     # OpenF1 may represent missing numeric observations with nulls. The model
     # pipeline is responsible for imputation; we preserve missingness here.
