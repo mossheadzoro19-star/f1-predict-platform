@@ -375,7 +375,9 @@ def build_race_state_dataset(
     request_pause: float = 1.0,
 ) -> pd.DataFrame:
     """Download real historical OpenF1 race observations and write Parquet."""
-    client = OpenF1Client()
+    # Historical OpenF1 data (2023+) is public; never send live credentials
+    # during offline training-data ingestion.
+    client = OpenF1Client(authenticated=False)
     all_rows: list[pd.DataFrame] = []
     for year in range(start_year, end_year + 1):
         sessions = [
