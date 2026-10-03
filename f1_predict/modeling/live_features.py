@@ -67,7 +67,7 @@ def validate_live_feature_contract(
 ) -> None:
     """Validate that all live predictors exist and are point-in-time safe."""
     contract = contract or LiveFeatureContract.default()
-    required = set(contract.features) | {
+    required = {
         contract.target,
         "session_key",
         "driver_number",
@@ -100,7 +100,7 @@ def select_live_dataset(
     contract = contract or LiveFeatureContract.default()
     validate_live_feature_contract(frame, contract)
 
-    X = frame.loc[:, list(contract.features)].copy()
+    X = frame.reindex(columns=list(contract.features)).copy()
     y = frame.loc[:, contract.target].astype("int8").copy()
 
     # Treat tyre compound as a categorical value, not an ordinal number.
