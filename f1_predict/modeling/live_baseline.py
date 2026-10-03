@@ -50,12 +50,15 @@ def build_live_logistic_baseline(
         ]
     )
 
-    preprocess = ColumnTransformer(
-        transformers=[
-            ("numeric", numeric_pipeline, list(contract.numeric_features)),
-            ("categorical", categorical_pipeline, list(contract.categorical_features)),
-        ]
-    )
+    transformers = [
+        ("numeric", numeric_pipeline, list(contract.numeric_features)),
+    ]
+    if contract.categorical_features:
+        transformers.append(
+            ("categorical", categorical_pipeline, list(contract.categorical_features))
+        )
+
+    preprocess = ColumnTransformer(transformers=transformers)
 
     return Pipeline(
         steps=[
