@@ -116,3 +116,20 @@ def test_live_evaluation_rejects_non_normalized_snapshot() -> None:
 
     with pytest.raises(ValueError, match="summing to 1"):
         evaluate_live_probabilities(frame)
+
+def test_live_evaluation_skips_snapshot_when_winner_is_absent(capsys) -> None:
+    frame = pd.DataFrame(
+        [
+            {"session_key": "s1", "lap_number": 1, "driver_number": 2, "winner": 0, "win_probability": 0.6},
+            {"session_key": "s1", "lap_number": 1, "driver_number": 3, "winner": 0, "win_probability": 0.4},
+            {"session_key": "s1", "lap_number": 2, "driver_number": 1, "winner": 1, "win_probability": 0.8},
+            {"session_key": "s1", "lap_number": 2, "driver_number": 2, "winner": 0, "win_probability": 0.2},
+        ]
+    )
+
+    metrics = evaluate_live_probabilities(frame)
+
+    assert metrics.snapshots == 1
+    assert metrics.races == 1
+    assert metrics.winner_accuracy == 1.0
+    assert "scorable_coverage = 0.5000" in capsys.readouterr().out
