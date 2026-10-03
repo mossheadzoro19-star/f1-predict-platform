@@ -11,6 +11,7 @@ import time
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from f1_predict.data_sources.openf1 import OpenF1Client
@@ -134,6 +135,98 @@ def _latest_stint(
     )
 
 
+def _add_point_in_time_dynamics(
+    joined: pd.DataFrame,
+    lap_frame: pd.DataFrame,
+    pit_rows: list[dict[str, Any]],
+) -> pd.DataFrame:
+    """Add only signals that were knowable before each lap snapshot."""
+    frame = joined.sort_values(
+        ["driver_number", "lap_number", "snapshot_time"]
+    ).copy()
+    grouped = frame.groupby("driver_number", sort=False)
+
+    position = pd.to_numeric(frame["position_position"], errors="coerce")
+    gap = pd.to_numeric(frame["interval_gap_to_leader"], errors="coerce")
+    ahead_gap = pd.to_numeric(frame["interval_interval"], errors="coerce")
+
+    frame["position_change_1_lap"] = position - grouped["position_position"].transform(
+        lambda s: pd.to_numeric(s, errors="coerce").shift(1)
+    )
+    frame["gap_change_1_lap"] = gap - grouped["interval_gap_to_leader"].transform(
+        lambda s: pd.to_numeric(s, errors="coerce").shift(1)
+    )
+    frame["interval_change_1_lap"] = ahead_gap - grouped["interval_interval"].transform(
+        lambda s: pd.to_numeric(s, errors="coerce").shift(1)
+    )
+
+    for window in (3, 5):
+        frame[f"position_change_{window}_laps"] = position - grouped[
+            "position_position"
+        ].transform(lambda s, w=window: pd.to_numeric(s, errors="coerce").shift(w))
+        frame[f"gap_change_{window}_laps"] = gap - grouped[
+            "interval_gap_to_leader"
+        ].transform(lambda s, w=window: pd.to_numeric(s, errors="coerce").shift(w))
+        frame[f"interval_change_{window}_laps"] = ahead_gap - grouped[
+            "interval_interval"
+        ].transform(lambda s, w=window: pd.to_numeric(s, errors="coerce").shift(w))
+
+    lap_history = lap_frame[["driver_number", "lap_number", "lap_duration"]].copy()
+    for column in ("driver_number", "lap_number", "lap_duration"):
+        lap_history[column] = pd.to_numeric(lap_history[column], errors="coerce")
+    lap_history = lap_history.dropna(subset=["driver_number", "lap_number"]).copy()
+    lap_history["driver_number"] = lap_history["driver_number"].astype(int)
+    lap_history["lap_number"] = lap_history["lap_number"].astype(int)
+    lap_history = lap_history.sort_values(["driver_number", "lap_number"])
+    lap_history["previous_lap_duration"] = lap_history.groupby(
+        "driver_number"
+    )["lap_duration"].shift(1)
+    lap_history["previous_3_lap_mean"] = (
+        lap_history.groupby("driver_number")["lap_duration"]
+        .transform(lambda s: s.shift(1).rolling(3, min_periods=1).mean())
+    )
+    frame = frame.merge(
+        lap_history[
+            ["driver_number", "lap_number", "previous_lap_duration", "previous_3_lap_mean"]
+        ],
+        on=["driver_number", "lap_number"],
+        how="left",
+    )
+
+    frame["pit_stops_completed"] = 0.0
+    frame["laps_since_pit"] = frame["lap_number"].astype(float)
+    pit_frame = pd.DataFrame(pit_rows)
+    if not pit_frame.empty and {"driver_number", "lap_number"}.issubset(pit_frame.columns):
+        pit_frame["driver_number"] = pd.to_numeric(
+            pit_frame["driver_number"], errors="coerce"
+        )
+        pit_frame["lap_number"] = pd.to_numeric(
+            pit_frame["lap_number"], errors="coerce"
+        )
+        pit_frame = pit_frame.dropna(subset=["driver_number", "lap_number"]).copy()
+        pit_frame["driver_number"] = pit_frame["driver_number"].astype(int)
+        pit_frame["lap_number"] = pit_frame["lap_number"].astype(int)
+        for driver, indexes in frame.groupby("driver_number").groups.items():
+            stops = np.sort(
+                pit_frame.loc[
+                    pit_frame["driver_number"] == int(driver), "lap_number"
+                ].unique()
+            )
+            if len(stops) == 0:
+                continue
+            laps = frame.loc[indexes, "lap_number"].to_numpy()
+            completed = np.searchsorted(stops, laps, side="left")
+            frame.loc[indexes, "pit_stops_completed"] = completed
+            has_stop = completed > 0
+            if has_stop.any():
+                last_stop = stops[completed[has_stop] - 1]
+                frame.loc[indexes[has_stop], "laps_since_pit"] = (
+                    laps[has_stop] - last_stop
+                )
+
+    return frame.sort_values(["prediction_time", "lap_number", "driver_number"])
+
+
 def _build_session_rows(
     client: OpenF1Client,
     session: dict[str, Any],
@@ -211,6 +304,9 @@ def _build_session_rows(
             interval, on=["driver_number", "snapshot_time"], how="left"
         )
 
+    pit_rows = client.get_pit_stops(session_key)
+    time.sleep(request_pause)
+
     stint_rows = client.get_stints(session_key)
     time.sleep(request_pause)
     stint = _latest_stint(stint_rows, snapshots)
@@ -239,6 +335,8 @@ def _build_session_rows(
         )
         joined = joined.merge(weather, on="snapshot_time", how="left")
 
+    joined = _add_point_in_time_dynamics(joined, lap_frame, pit_rows)
+
     joined["season"] = int(session["year"])
     joined["session_key"] = session_key
     joined["meeting_key"] = session.get("meeting_key")
@@ -252,7 +350,13 @@ def _build_session_rows(
         "position_position", "interval_gap_to_leader",
         "interval_laps_behind_leader", "interval_interval",
         "interval_laps_behind_car_ahead", "stint_compound",
-        "stint_tyre_age_at_start", "weather_air_temperature",
+        "stint_tyre_age_at_start",
+        "position_change_1_lap", "position_change_3_laps", "position_change_5_laps",
+        "gap_change_1_lap", "gap_change_3_laps", "gap_change_5_laps",
+        "interval_change_1_lap", "interval_change_3_laps", "interval_change_5_laps",
+        "previous_lap_duration", "previous_3_lap_mean",
+        "pit_stops_completed", "laps_since_pit",
+        "weather_air_temperature",
         "weather_track_temperature", "weather_humidity", "weather_rainfall",
         "weather_wind_speed",
     ]
