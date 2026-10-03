@@ -148,6 +148,8 @@ def evaluate_live_probabilities(predictions: pd.DataFrame) -> LivePredictionMetr
 
     rows: list[tuple[float, float, float]] = []
 
+    skipped_snapshots = 0
+
     for _, group in predictions.groupby(SNAPSHOT_KEYS, sort=False):
         group = group.copy()
         probability_sum = float(group["win_probability"].sum())
@@ -155,8 +157,16 @@ def evaluate_live_probabilities(predictions: pd.DataFrame) -> LivePredictionMetr
             raise ValueError("Each lap snapshot must have probabilities summing to 1")
 
         actual = group.loc[group["winner"] == 1, "driver_number"]
+        if len(actual) == 0:
+            # A driver can disappear from the OpenF1 lap-state stream after a
+            # terminal event. Such a snapshot cannot be scored against the
+            # eventual winner because the winner is no longer in the candidate
+            # field. Keep it in predictions, but exclude it from supervised
+            # snapshot metrics and report the resulting coverage.
+            skipped_snapshots += 1
+            continue
         if len(actual) != 1:
-            raise ValueError("Each evaluated snapshot must contain exactly one eventual winner")
+            raise ValueError("Each evaluated snapshot must contain at most one eventual winner")
 
         winner_driver = actual.iloc[0]
         winner_probability = float(
@@ -179,9 +189,16 @@ def evaluate_live_probabilities(predictions: pd.DataFrame) -> LivePredictionMetr
         )
 
     if not rows:
-        raise ValueError("No lap snapshots available for evaluation")
+        raise ValueError("No scorable lap snapshots available for evaluation")
 
     metrics = np.asarray(rows, dtype=float)
+    coverage = len(rows) / (len(rows) + skipped_snapshots)
+
+    print(
+        f"  scorable_coverage = {coverage:.4f} "
+        f"({len(rows)}/{len(rows) + skipped_snapshots} snapshots)"
+    )
+
     return LivePredictionMetrics(
         winner_accuracy=float(metrics[:, 0].mean()),
         log_loss=float(metrics[:, 1].mean()),
