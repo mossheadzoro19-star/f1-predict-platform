@@ -41,10 +41,15 @@ class OpenF1Client:
                 pass
         return fallback
 
-    def _get_list(self, endpoint: str, params: dict[str, Any]) -> list[dict[str, Any]]:
+    def _get_list(
+        self,
+        endpoint: str,
+        params: dict[str, Any],
+        use_auth: bool | None = None,
+    ) -> list[dict[str, Any]]:
         url = f"{self.base_url}/{endpoint}"
         token = self.access_token or os.getenv("OPENF1_API_TOKEN")
-        use_auth = bool(token)
+        use_auth = bool(token) if use_auth is None else use_auth
         auth_fallback_used = False
 
         with httpx.Client(timeout=15.0, follow_redirects=True) as client:
@@ -101,7 +106,9 @@ class OpenF1Client:
         raise RuntimeError("OpenF1 request loop exited unexpectedly.")
 
     def get_sessions(self, year: int) -> list[dict[str, Any]]:
-        return self._get_list("sessions", {"year": year})
+        # Historical sessions (2023+) are public. Explicitly bypass any
+        # configured live token so stale credentials cannot break ingestion.
+        return self._get_list("sessions", {"year": year}, use_auth=False)
 
     def get_positions(self, session_key: int) -> list[dict[str, Any]]:
         """Return position observations for a race session."""
