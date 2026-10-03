@@ -14,6 +14,7 @@ class OpenF1Client:
 
     base_url: str = "https://api.openf1.org/v1"
     access_token: str | None = None
+    authenticated: bool = True
     min_request_interval_seconds: float = 2.1
     max_retries: int = 5
     retry_backoff_seconds: float = 5.0
@@ -49,9 +50,7 @@ class OpenF1Client:
     ) -> list[dict[str, Any]]:
         url = f"{self.base_url}/{endpoint}"
         token = self.access_token or os.getenv("OPENF1_API_TOKEN")
-        use_auth = bool(token) if use_auth is None else use_auth
-        auth_fallback_used = False
-
+        use_auth = (bool(token) and self.authenticated) if use_auth is None else use_auth
         with httpx.Client(timeout=15.0, follow_redirects=True) as client:
             for attempt in range(self.max_retries + 1):
                 self._wait_for_rate_limit()
@@ -67,17 +66,6 @@ class OpenF1Client:
                     if attempt >= self.max_retries:
                         raise
                     time.sleep(self.retry_backoff_seconds * (2**attempt))
-                    continue
-
-                if response.status_code == 401 and use_auth and not auth_fallback_used:
-                    # Historical OpenF1 data is publicly accessible. If a stale
-                    # local token is configured, retry once without authentication.
-                    use_auth = False
-                    auth_fallback_used = True
-                    print(
-                        f"OpenF1 authentication rejected on /{endpoint}; "
-                        "retrying without authentication."
-                    )
                     continue
 
                 if response.status_code == 429:
@@ -106,9 +94,7 @@ class OpenF1Client:
         raise RuntimeError("OpenF1 request loop exited unexpectedly.")
 
     def get_sessions(self, year: int) -> list[dict[str, Any]]:
-        # Historical sessions (2023+) are public. Explicitly bypass any
-        # configured live token so stale credentials cannot break ingestion.
-        return self._get_list("sessions", {"year": year}, use_auth=False)
+        return self._get_list("sessions", {"year": year})
 
     def get_positions(self, session_key: int) -> list[dict[str, Any]]:
         """Return position observations for a race session."""
