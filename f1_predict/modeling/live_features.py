@@ -56,6 +56,15 @@ class LiveFeatureContract:
             target=TARGET_COLUMN,
         )
 
+    @classmethod
+    def old(cls) -> "LiveFeatureContract":
+        """Return the frozen pre-enrichment feature contract."""
+        return cls(
+            numeric_features=tuple(OLD_LIVE_NUMERIC_FEATURES),
+            categorical_features=tuple(LIVE_CATEGORICAL_FEATURES),
+            target=TARGET_COLUMN,
+        )
+
     @property
     def features(self) -> tuple[str, ...]:
         return self.numeric_features + self.categorical_features
