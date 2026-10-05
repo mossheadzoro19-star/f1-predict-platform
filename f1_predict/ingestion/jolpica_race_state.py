@@ -78,6 +78,7 @@ def _build_race(
     cumulative: dict[str, float] = {}
     previous_position: dict[str, float] = {}
     previous_gap: dict[str, float] = {}
+    previous_interval: dict[str, float] = {}
     history: dict[str, list[float]] = {}
 
     for lap in laps:
@@ -146,11 +147,7 @@ def _build_race(
                     "position_position": position,
                     "interval_gap_to_leader": gap,
                     "interval_laps_behind_leader": np.nan,
-                    "interval_interval": (
-                        gap - previous_gap.get(driver, gap)
-                        if driver in previous_gap
-                        else np.nan
-                    ),
+                    "interval_interval": interval if index > 0 else np.nan,
                     "interval_laps_behind_car_ahead": np.nan,
                     "stint_compound": None,
                     "stint_tyre_age_at_start": np.nan,
@@ -162,7 +159,7 @@ def _build_race(
                     "pit_stops_completed": float(pit_count),
                     "laps_since_pit": float(lap_number - last_pit),
                     "position_change_1_lap": (
-                        previous_position[driver] - position
+                        position - previous_position[driver]
                         if driver in previous_position
                         else np.nan
                     ),
@@ -175,7 +172,11 @@ def _build_race(
                     ),
                     "gap_change_3_laps": np.nan,
                     "gap_change_5_laps": np.nan,
-                    "interval_change_1_lap": np.nan,
+                    "interval_change_1_lap": (
+                        interval - previous_interval[driver]
+                        if driver in previous_interval and index > 0
+                        else np.nan
+                    ),
                     "interval_change_3_laps": np.nan,
                     "interval_change_5_laps": np.nan,
                     "weather_air_temperature": np.nan,
@@ -187,6 +188,7 @@ def _build_race(
             )
             previous_position[driver] = position
             previous_gap[driver] = gap
+            previous_interval[driver] = interval if index > 0 else np.nan
 
     frame = pd.DataFrame(rows)
     if frame.empty:
