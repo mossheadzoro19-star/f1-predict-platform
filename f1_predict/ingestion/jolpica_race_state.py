@@ -224,8 +224,11 @@ def build_race_state_dataset(
     frames: list[pd.DataFrame] = []
 
     for year in range(start_year, end_year + 1):
+        print(f"\n[{year}] Fetching season schedule...", flush=True)
         schedule_payload = client.get_season_schedule(year)
+        print(f"[{year}] Fetching season results...", flush=True)
         results_payload = client.get_season_results(year)
+        print(f"[{year}] Season metadata loaded.", flush=True)
         # Jolpica's season-level results/schedule contain all races, while
         # lap/pit data are fetched once per race rather than once per driver.
         schedule_rows = (
@@ -244,6 +247,11 @@ def build_race_state_dataset(
             round_number = int(schedule_race["round"])
             try:
                 result_race = result_by_round[str(round_number)]
+                print(
+                    f"FETCH {year} R{round_number:02d} "
+                    f"{schedule_race.get('raceName', '')}: laps + pit stops...",
+                    flush=True,
+                )
                 laps = client.get_race_laps(year, round_number)
                 pits = client.get_race_pitstops(year, round_number)
                 frame = _build_race(
