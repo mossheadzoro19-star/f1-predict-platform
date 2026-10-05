@@ -80,9 +80,12 @@ def _build_session_frame(session: object, year: int, round_number: int) -> pd.Da
     laps["interval_laps_behind_car_ahead"] = np.nan
 
     laps["stint_compound"] = laps.get("Compound", pd.Series(index=laps.index, dtype=object))
-    laps["stint_tyre_age_at_start"] = pd.to_numeric(
+    tyre_life = pd.to_numeric(
         laps.get("TyreLife", pd.Series(index=laps.index)), errors="coerce"
     )
+    # FastF1 reports tyre life at lap end; convert to age at lap start so the
+    # feature keeps the same meaning as the existing race-state contract.
+    laps["stint_tyre_age_at_start"] = (tyre_life - 1.0).clip(lower=0)
 
     pit_rows: list[dict[str, object]] = []
     if "PitInTime" in laps:
@@ -93,6 +96,12 @@ def _build_session_frame(session: object, year: int, round_number: int) -> pd.Da
     if "LapStartDate" in laps:
         prediction_time = pd.to_datetime(laps["LapStartDate"], utc=True, errors="coerce")
         prediction_time += pd.to_timedelta(laps["lap_duration"], unit="s")
+        fallback_date = getattr(session, "date", None)
+        if fallback_date is not None:
+            prediction_time = prediction_time.fillna(
+                pd.Timestamp(fallback_date)
+                + pd.to_timedelta(laps["session_seconds"], unit="s")
+            )
     else:
         session_date = getattr(session, "date", None)
         if session_date is None:
@@ -105,7 +114,8 @@ def _build_session_frame(session: object, year: int, round_number: int) -> pd.Da
             )
 
     laps["prediction_time"] = prediction_time
-    laps["snapshot_time"] = prediction_time
+    laps = laps.dropna(subset=["prediction_time"]).copy()
+    laps["snapshot_time"] = laps["prediction_time"]
     laps = _merge_weather(laps, getattr(session, "weather_data", None))
 
     results = session.results.copy()
