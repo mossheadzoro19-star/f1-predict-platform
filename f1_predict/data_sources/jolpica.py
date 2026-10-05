@@ -125,3 +125,11 @@ class JolpicaClient:
     def get_season_qualifying(self, year: int) -> dict[str, Any]:
         """Return all qualifying results for a season."""
         return self._get_all(f"{year}/qualifying/")
+
+    def get_race_laps(self, year: int, round_number: int) -> dict[str, Any]:
+        """Return lap-by-lap timing for one race."""
+        return self._get_all(f"{year}/{round_number}/laps/")
+
+    def get_race_pitstops(self, year: int, round_number: int) -> dict[str, Any]:
+        """Return pit-stop records for one race."""
+        return self._get_all(f"{year}/{round_number}/pitstops/")
