@@ -79,8 +79,14 @@ class JolpicaClient:
             )
 
         if path.endswith("/laps/"):
+            # Jolpica's /laps/ endpoint paginates driver timing records,
+            # while those records are nested inside Laps objects.
             return sum(
-                len(race.get("Laps", []))
+                sum(
+                    len(lap.get("Timings", []))
+                    for lap in race.get("Laps", [])
+                    if isinstance(lap, dict)
+                )
                 for race in page_races
                 if isinstance(race.get("Laps", []), list)
             )
@@ -94,9 +100,58 @@ class JolpicaClient:
 
         return len(page_races)
 
+    @staticmethod
+    def _merge_race_pages(
+        path: str,
+        race_pages: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Merge nested records split across pagination pages."""
+        if not (
+            path.endswith("/results/")
+            or path.endswith("/qualifying/")
+            or path.endswith("/laps/")
+            or path.endswith("/pitstops/")
+        ):
+            return race_pages
+
+        collection_key = {
+            "/results/": "Results",
+            "/qualifying/": "QualifyingResults",
+            "/laps/": "Laps",
+            "/pitstops/": "PitStops",
+        }[next(suffix for suffix in ("/results/", "/qualifying/", "/laps/", "/pitstops/") if path.endswith(suffix))]
+
+        merged: dict[str, dict[str, Any]] = {}
+        for race in race_pages:
+            key = str(race.get("round") or race.get("raceName"))
+            if key not in merged:
+                merged[key] = dict(race)
+                merged[key][collection_key] = list(race.get(collection_key, []))
+                continue
+
+            target = merged[key]
+            target[collection_key].extend(race.get(collection_key, []))
+
+        if collection_key == "Laps":
+            for race in merged.values():
+                by_lap: dict[str, dict[str, Any]] = {}
+                for lap in race["Laps"]:
+                    lap_key = str(lap.get("number"))
+                    if lap_key not in by_lap:
+                        by_lap[lap_key] = dict(lap)
+                        by_lap[lap_key]["Timings"] = list(lap.get("Timings", []))
+                    else:
+                        by_lap[lap_key]["Timings"].extend(lap.get("Timings", []))
+                race["Laps"] = sorted(
+                    by_lap.values(),
+                    key=lambda lap: int(lap.get("number", 0)),
+                )
+
+        return list(merged.values())
+
     def _get_all(self, path: str) -> dict[str, Any]:
-        """Fetch every page and combine the returned RaceTable.Races objects."""
-        races: list[dict[str, Any]] = []
+        """Fetch every page and merge nested RaceTable records."""
+        race_pages: list[dict[str, Any]] = []
         first_payload: dict[str, Any] | None = None
         offset = 0
 
@@ -112,9 +167,9 @@ class JolpicaClient:
                 if not isinstance(page_races, list):
                     raise TypeError(f"Unexpected RaceTable.Races payload from {path}")
 
-                races.extend(page_races)
                 page_count = self._page_item_count(path, page_races)
                 total = int(mrdata.get("total", offset + page_count))
+                race_pages.extend(page_races)
 
                 if page_count == 0 or offset + page_count >= total:
                     break
@@ -122,6 +177,7 @@ class JolpicaClient:
                 offset += page_count
 
         assert first_payload is not None
+        races = self._merge_race_pages(path, race_pages)
         first_payload["MRData"]["limit"] = str(len(races))
         first_payload["MRData"]["offset"] = "0"
         first_payload["MRData"]["total"] = str(len(races))
@@ -140,52 +196,10 @@ class JolpicaClient:
         """Return all qualifying results for a season."""
         return self._get_all(f"{year}/qualifying/")
 
-    def _get_race_collection(
-        self,
-        path: str,
-        collection_key: str,
-    ) -> dict[str, Any]:
-        """Fetch one race-level collection in a single bounded request.
-
-        Current F1 races fit comfortably within the 100-record page size for
-        lap and pit-stop collections. Avoiding generic pagination here prevents
-        ambiguous nested-record offsets and keeps race ingestion deterministic.
-        """
-        with httpx.Client(timeout=30.0, follow_redirects=True) as client:
-            payload = self._get_json(client, path, limit=100, offset=0)
-
-        races = (
-            payload.get("MRData", {})
-            .get("RaceTable", {})
-            .get("Races", [])
-        )
-        if not isinstance(races, list) or not races:
-            return payload
-
-        records = races[0].get(collection_key, [])
-        if not isinstance(records, list):
-            raise TypeError(
-                f"Unexpected {collection_key} payload from {path}"
-            )
-
-        total = int(payload.get("MRData", {}).get("total", len(records)))
-        if total > len(records):
-            raise RuntimeError(
-                f"{path} contains {total} records but only {len(records)} "
-                "were returned in the bounded page."
-            )
-        return payload
-
     def get_race_laps(self, year: int, round_number: int) -> dict[str, Any]:
         """Return lap-by-lap timing for one race."""
-        return self._get_race_collection(
-            f"{year}/{round_number}/laps/",
-            "Laps",
-        )
+        return self._get_all(f"{year}/{round_number}/laps/")
 
     def get_race_pitstops(self, year: int, round_number: int) -> dict[str, Any]:
         """Return pit-stop records for one race."""
-        return self._get_race_collection(
-            f"{year}/{round_number}/pitstops/",
-            "PitStops",
-        )
+        return self._get_all(f"{year}/{round_number}/pitstops/")
