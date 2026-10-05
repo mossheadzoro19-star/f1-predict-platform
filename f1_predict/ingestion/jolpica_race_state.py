@@ -112,7 +112,7 @@ def _build_race(
         }
         leader_time = min(row["cumulative_time"] for row in state)
 
-        for row in state:
+        for index, row in enumerate(state):
             driver = str(row["driver_id"])
             cumulative_time = float(row["cumulative_time"])
             position = position_by_driver[driver]
@@ -188,16 +188,26 @@ def _build_race(
     if frame.empty:
         return frame
 
-    # Compute multi-lap dynamics only from prior observations.
-    from f1_predict.ingestion.openf1_race_state import _add_point_in_time_dynamics
+    frame = pd.DataFrame(rows)
+    if frame.empty:
+        return frame
 
-    frame = _add_point_in_time_dynamics(
-        frame,
-        frame.rename(columns={"lap_time": "lap_duration"})[
-            ["driver_number", "lap_number", "lap_duration"]
-        ] if "lap_duration" in frame else pd.DataFrame(),
-        [],
-    )
+    # Derive multi-lap dynamics from earlier observations only.
+    frame = frame.sort_values(["driver_number", "lap_number", "prediction_time"]).copy()
+    grouped = frame.groupby("driver_number", sort=False)
+    for window in (3, 5):
+        frame[f"position_change_{window}_laps"] = (
+            frame["position_position"]
+            - grouped["position_position"].shift(window)
+        )
+        frame[f"gap_change_{window}_laps"] = (
+            frame["interval_gap_to_leader"]
+            - grouped["interval_gap_to_leader"].shift(window)
+        )
+        frame[f"interval_change_{window}_laps"] = (
+            frame["interval_interval"]
+            - grouped["interval_interval"].shift(window)
+        )
     return frame
 
 
@@ -206,15 +216,12 @@ def build_race_state_dataset(
     end_year: int,
     output_path: Path,
 ) -> pd.DataFrame:
-    client = JolpicaClient(request_delay_seconds=0.25)
+    client = JolpicaClient(request_delay_seconds=0.5)
     frames: list[pd.DataFrame] = []
 
     for year in range(start_year, end_year + 1):
         schedule_payload = client.get_season_schedule(year)
         results_payload = client.get_season_results(year)
-        schedule_races = _extract_race(schedule_payload)
-        results_races = _extract_race(results_payload)
-
         # Jolpica's season-level results/schedule contain all races, while
         # lap/pit data are fetched once per race rather than once per driver.
         schedule_rows = (
