@@ -78,6 +78,20 @@ class JolpicaClient:
                 if isinstance(race.get("QualifyingResults", []), list)
             )
 
+        if path.endswith("/laps/"):
+            return sum(
+                len(race.get("Laps", []))
+                for race in page_races
+                if isinstance(race.get("Laps", []), list)
+            )
+
+        if path.endswith("/pitstops/"):
+            return sum(
+                len(race.get("PitStops", []))
+                for race in page_races
+                if isinstance(race.get("PitStops", []), list)
+            )
+
         return len(page_races)
 
     def _get_all(self, path: str) -> dict[str, Any]:
