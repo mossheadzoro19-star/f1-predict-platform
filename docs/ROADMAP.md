@@ -6,9 +6,9 @@
 - [x] Leakage audit
 - [x] Live-state OLD dataset and baseline experiments
 - [x] Enriched live feature contract
-- [ ] FastF1 historical race-state ingestion
+- [x] FastF1 historical race-state ingestion
 - [ ] Generate enriched 2023–2025 dataset
-- [ ] OLD vs ENRICHED XGBoost comparison
+- [x] OLD vs ENRICHED XGBoost comparison (evaluation path ready; results pending enriched dataset)
 - [ ] Lock useful/weak features using untouched 2025 test
 
 ## NEXT — Free live provider
