@@ -119,7 +119,7 @@ def _build_race(
             gap = cumulative_time - leader_time
             prior_laps = history[driver][:-1]
 
-                        timestamp = race_start + pd.to_timedelta(cumulative_time, unit="s")
+            timestamp = race_start + pd.to_timedelta(cumulative_time, unit="s")
             interval = (
                 cumulative_time - float(state[index - 1]["cumulative_time"])
                 if index > 0 else 0.0
