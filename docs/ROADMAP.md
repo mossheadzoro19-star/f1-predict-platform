@@ -1,46 +1,36 @@
 # Roadmap
 
-## Milestone 1 — Data foundation
-- Provider adapters
-- Raw historical ingestion
-- Provenance and licensing notes
-- Codespaces environment
+## NOW — Historical race-state milestone
+- [x] Historical Jolpica ingestion
+- [x] Point-in-time feature pipeline
+- [x] Leakage audit
+- [x] Live-state OLD dataset and baseline experiments
+- [x] Enriched live feature contract
+- [ ] FastF1 historical race-state ingestion
+- [ ] Generate enriched 2023–2025 dataset
+- [ ] OLD vs ENRICHED XGBoost comparison
+- [ ] Lock useful/weak features using untouched 2025 test
 
-## Milestone 2 — Historical dataset
-- Normalize races, drivers, constructors, qualifying and results
-- Add sprint and pit-stop history where appropriate
-- Build point-in-time feature snapshots
-- Establish chronological train/validation/test splits
-- Add schema/data-quality checks
+## NEXT — Free live provider
+- [ ] Select and validate free-access live timing provider
+- [ ] Implement provider adapter
+- [ ] Live freshness/stale detection
+- [ ] Live inference validation
 
-## Milestone 3 — Baselines
-- Grid-position baseline
-- Driver/constructor baseline
-- Logistic regression
-- Gradient-boosted trees
-- Log loss, Brier score, calibration and winner accuracy
+## NEXT — Replay and product
+- [ ] Historical replay engine
+- [ ] Replay probability trajectories
+- [ ] FastAPI production path
+- [ ] WebSocket updates
+- [ ] Pixel-grid F1 dashboard
 
-## Milestone 4 — Historical replay
-- Reconstruct race state lap by lap
-- Add lap timing, stints, tyres, pit stops and weather
-- Generate predictions at multiple timestamps
-- Measure probability trajectory quality
+## LATER — Research
+- [ ] Advanced calibration
+- [ ] Temporal models only if justified by controlled experiments
+- [ ] Driver/circuit representations
+- [ ] Deployment and observability hardening
 
-## Milestone 5 — Live inference
-- OpenF1 live adapter
-- Event-driven update pipeline
-- Prediction service
-- WebSocket stream
-- Stale-data detection
-
-## Milestone 6 — Research
-- Temporal models
-- Driver/circuit representations
-- Advanced calibration
-- Ablation studies
-
-## Milestone 7 — Product
-- Next.js interface
-- Race dashboard
-- Replay UI
-- Deployment and observability
+## DEFERRED
+- Paid live APIs
+- Deep learning without evidence
+- Microservices and unnecessary infrastructure
