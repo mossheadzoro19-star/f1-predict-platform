@@ -140,10 +140,52 @@ class JolpicaClient:
         """Return all qualifying results for a season."""
         return self._get_all(f"{year}/qualifying/")
 
+    def _get_race_collection(
+        self,
+        path: str,
+        collection_key: str,
+    ) -> dict[str, Any]:
+        """Fetch one race-level collection in a single bounded request.
+
+        Current F1 races fit comfortably within the 100-record page size for
+        lap and pit-stop collections. Avoiding generic pagination here prevents
+        ambiguous nested-record offsets and keeps race ingestion deterministic.
+        """
+        with httpx.Client(timeout=30.0, follow_redirects=True) as client:
+            payload = self._get_json(client, path, limit=100, offset=0)
+
+        races = (
+            payload.get("MRData", {})
+            .get("RaceTable", {})
+            .get("Races", [])
+        )
+        if not isinstance(races, list) or not races:
+            return payload
+
+        records = races[0].get(collection_key, [])
+        if not isinstance(records, list):
+            raise TypeError(
+                f"Unexpected {collection_key} payload from {path}"
+            )
+
+        total = int(payload.get("MRData", {}).get("total", len(records)))
+        if total > len(records):
+            raise RuntimeError(
+                f"{path} contains {total} records but only {len(records)} "
+                "were returned in the bounded page."
+            )
+        return payload
+
     def get_race_laps(self, year: int, round_number: int) -> dict[str, Any]:
         """Return lap-by-lap timing for one race."""
-        return self._get_all(f"{year}/{round_number}/laps/")
+        return self._get_race_collection(
+            f"{year}/{round_number}/laps/",
+            "Laps",
+        )
 
     def get_race_pitstops(self, year: int, round_number: int) -> dict[str, Any]:
         """Return pit-stop records for one race."""
-        return self._get_all(f"{year}/{round_number}/pitstops/")
+        return self._get_race_collection(
+            f"{year}/{round_number}/pitstops/",
+            "PitStops",
+        )
