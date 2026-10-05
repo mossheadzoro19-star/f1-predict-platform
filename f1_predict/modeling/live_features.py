@@ -35,6 +35,21 @@ LIVE_NUMERIC_FEATURES = [
     "weather_wind_speed",
 ]
 
+OLD_LIVE_NUMERIC_FEATURES = [
+    "lap_number",
+    "position_position",
+    "interval_gap_to_leader",
+    "interval_laps_behind_leader",
+    "interval_interval",
+    "interval_laps_behind_car_ahead",
+    "stint_tyre_age_at_start",
+    "weather_air_temperature",
+    "weather_track_temperature",
+    "weather_humidity",
+    "weather_rainfall",
+    "weather_wind_speed",
+]
+
 LIVE_CATEGORICAL_FEATURES = [
     "stint_compound",
 ]
