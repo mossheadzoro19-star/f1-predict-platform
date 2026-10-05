@@ -176,3 +176,103 @@ def build_race_state_report(predictions: pd.DataFrame) -> dict[str, Any]:
         "final_lap": final_lap_diagnostics(predictions),
         "confidence": confidence_diagnostics(predictions).to_dict(orient="records"),
     }
+
+
+def evaluate_current_xgboost(
+    frame: pd.DataFrame,
+    train_end_year: int = 2023,
+    validation_end_year: int = 2024,
+) -> dict[str, Any]:
+    """Run the existing XGBoost model under the frozen chronological protocol."""
+    from f1_predict.modeling.live_features import LiveFeatureContract
+    from f1_predict.modeling.live_split import chronological_live_race_split
+    from f1_predict.modeling.live_xgboost import fit_live_xgboost, predict_live_probabilities
+
+    split = chronological_live_race_split(
+        frame,
+        train_end_year=train_end_year,
+        validation_end_year=validation_end_year,
+    )
+    contract = LiveFeatureContract.default()
+
+    validation_model = fit_live_xgboost(split.train, contract)
+    validation_predictions = predict_live_probabilities(
+        validation_model, split.validation, contract
+    )
+
+    final_train = pd.concat([split.train, split.validation], ignore_index=True)
+    final_model = fit_live_xgboost(final_train, contract)
+    test_predictions = predict_live_probabilities(
+        final_model, split.test, contract
+    )
+
+    return {
+        "validation": build_race_state_report(validation_predictions),
+        "test": build_race_state_report(test_predictions),
+        "split": {
+            "train_rows": int(len(split.train)),
+            "validation_rows": int(len(split.validation)),
+            "test_rows": int(len(split.test)),
+            "train_races": int(split.train["session_key"].nunique()),
+            "validation_races": int(split.validation["session_key"].nunique()),
+            "test_races": int(split.test["session_key"].nunique()),
+        },
+    }
+
+
+def main() -> None:
+    import argparse
+    import json
+
+    parser = argparse.ArgumentParser(
+        description="Cross-check current live XGBoost against a current-P1 baseline."
+    )
+    parser.add_argument(
+        "--data",
+        default="data/processed/features/openf1_race_state.parquet",
+    )
+    parser.add_argument("--train-end-year", type=int, default=2023)
+    parser.add_argument("--validation-end-year", type=int, default=2024)
+    args = parser.parse_args()
+
+    report = evaluate_current_xgboost(
+        pd.read_parquet(args.data),
+        train_end_year=args.train_end_year,
+        validation_end_year=args.validation_end_year,
+    )
+
+    for split_name in ("validation", "test"):
+        overall = report[split_name]["overall"]
+        print(f"\n{split_name.upper()}")
+        print(f"  winner accuracy       = {overall['winner_accuracy']:.4f}")
+        print(f"  current P1 accuracy   = {overall['current_leader_accuracy']:.4f}")
+        print(f"  model - P1 delta      = {overall['model_vs_leader_accuracy_delta']:+.4f}")
+        print(f"  log loss              = {overall['log_loss']:.4f}")
+        print(f"  brier score           = {overall['brier_score']:.4f}")
+        print(f"  scorable coverage     = {overall['scorable_coverage']:.4f}")
+
+        print("  phase:")
+        for row in report[split_name]["phase"]:
+            print(
+                f"    {row['phase']:<5} "
+                f"acc={row['winner_accuracy']:.4f} "
+                f"p1={row['current_leader_accuracy']:.4f} "
+                f"LL={row['log_loss']:.4f} "
+                f"Brier={row['brier_score']:.4f}"
+            )
+
+        final = report[split_name]["final_lap"]
+        print(
+            "  final lap: "
+            f"acc={final['winner_accuracy']:.4f} "
+            f"p1={final['current_leader_accuracy']:.4f} "
+            f"LL={final['log_loss']:.4f} "
+            f"Brier={final['brier_score']:.4f}"
+        )
+
+    print("\nJSON REPORT")
+    print(json.dumps(report, indent=2))
+
+
+if __name__ == "__main__":
+    main()
