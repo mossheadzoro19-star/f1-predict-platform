@@ -16,6 +16,7 @@ dependencies = [
   "pyarrow>=16,<22",
   "scikit-learn>=1.5,<2",
   "xgboost>=2.1,<4",
+  "fastf1>=3.6,<4",
   "fastapi>=0.115,<1",
   "uvicorn[standard]>=0.30,<1"
 ]
