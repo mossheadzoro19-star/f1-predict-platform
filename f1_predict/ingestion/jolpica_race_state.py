@@ -119,7 +119,7 @@ def _build_race(
             gap = cumulative_time - leader_time
             prior_laps = history[driver][:-1]
 
-            timestamp = race_start + pd.to_timedelta(cumulative_time, unit="s")
+            timestamp = race_start + pd.to_timedelta(cumulative_time, unit="s")\n            interval = (\n                cumulative_time - float(state[index - 1]["cumulative_time"])\n                if index > 0 else 0.0\n            )
             pit_count = sum(
                 pit_lap < lap_number for pit_lap in pit_laps.get(driver, [])
             )
@@ -150,6 +150,7 @@ def _build_race(
                     "interval_laps_behind_car_ahead": np.nan,
                     "stint_compound": None,
                     "stint_tyre_age_at_start": np.nan,
+                    "lap_duration": lap_time,
                     "previous_lap_duration": prior_laps[-1] if prior_laps else np.nan,
                     "previous_3_lap_mean": (
                         float(np.mean(prior_laps[-3:])) if prior_laps else np.nan
