@@ -1,37 +1,33 @@
 # Data provenance and licensing
 
 ## Jolpica-F1
-
 Purpose: structured historical Formula 1 records.
 
-Project policy: use the API for non-commercial research while complying with the API terms, attribution requirements, rate limits, and CC BY-NC-SA 4.0 licensing described by the project.
+Use only within the provider's current terms, attribution requirements, rate limits and licensing conditions.
 
-Reference:
-- https://github.com/jolpica/jolpica-f1
+Reference: https://github.com/jolpica/jolpica-f1
 
 ## FastF1
+Purpose: richer historical F1 session, lap, telemetry and weather processing.
 
-Purpose: richer historical F1 session/lap/telemetry/weather processing.
+FastF1 software is MIT licensed, but upstream motorsport data may have separate terms. Do not assume the software license grants unrestricted redistribution of retrieved data.
 
-FastF1 is software distributed under the MIT license. Its upstream motorsport data sources may have separate terms; do not assume the software license grants redistribution rights to all retrieved data.
+Reference: https://github.com/theOehrly/Fast-F1
 
-Reference:
-- https://github.com/theOehrly/Fast-F1
+## Live timing provider
+Purpose: free-access real-time race state.
+
+The live provider must sit behind an adapter so it can be replaced if access, reliability or licensing changes. Free access does not automatically mean unrestricted commercial redistribution.
 
 ## OpenF1
+OpenF1 is retained as historical project context only. It must not be treated as the required provider for this project because current live-session access may require authenticated/paid access.
 
-Purpose: live race timing and historical replay/live data.
-
-OpenF1 documentation and terms distinguish historical access from live access and describe different access plans. Before any public/commercial deployment, re-check current provider terms and required access tier.
-
-Reference:
-- https://openf1.org/
-- https://openf1.org/docs/
+Reference: https://openf1.org/
 
 ## Repository policy
-
 1. Keep raw provider responses separate from derived ML datasets.
 2. Store retrieval timestamps and source identifiers.
 3. Never commit provider credentials.
-4. Re-check provider terms before enabling public data redistribution.
-5. Preserve point-in-time correctness when creating training examples.
+4. Re-check provider terms before public/commercial deployment.
+5. Preserve point-in-time correctness.
+6. Never label cached or fallback data as LIVE.
