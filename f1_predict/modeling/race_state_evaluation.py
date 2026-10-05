@@ -182,6 +182,7 @@ def evaluate_current_xgboost(
     frame: pd.DataFrame,
     train_end_year: int = 2023,
     validation_end_year: int = 2024,
+    contract: Any | None = None,
 ) -> dict[str, Any]:
     """Run the existing XGBoost model under the frozen chronological protocol."""
     from f1_predict.modeling.live_features import LiveFeatureContract
@@ -193,7 +194,7 @@ def evaluate_current_xgboost(
         train_end_year=train_end_year,
         validation_end_year=validation_end_year,
     )
-    contract = LiveFeatureContract.default()
+    contract = contract or LiveFeatureContract.default()
 
     validation_model = fit_live_xgboost(split.train, contract)
     validation_predictions = predict_live_probabilities(
@@ -233,12 +234,21 @@ def main() -> None:
     )
     parser.add_argument("--train-end-year", type=int, default=2023)
     parser.add_argument("--validation-end-year", type=int, default=2024)
+    parser.add_argument("--contract", choices=("enriched", "old"), default="enriched")
     args = parser.parse_args()
 
+    from f1_predict.modeling.live_features import LiveFeatureContract
+
+    contract = (
+        LiveFeatureContract.old()
+        if args.contract == "old"
+        else LiveFeatureContract.default()
+    )
     report = evaluate_current_xgboost(
         pd.read_parquet(args.data),
         train_end_year=args.train_end_year,
         validation_end_year=args.validation_end_year,
+        contract=contract,
     )
 
     for split_name in ("validation", "test"):
