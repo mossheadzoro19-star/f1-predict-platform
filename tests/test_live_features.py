@@ -55,6 +55,13 @@ def _frame() -> pd.DataFrame:
     return frame
 
 
+def test_old_contract_is_frozen_subset():
+    contract = LiveFeatureContract.old()
+    assert "position_position" in contract.features
+    assert "position_change_1_lap" not in contract.features
+    assert "previous_lap_duration" not in contract.features
+
+
 def test_live_contract_has_only_point_in_time_features():
     contract = LiveFeatureContract.default()
     assert "winner" not in contract.features
