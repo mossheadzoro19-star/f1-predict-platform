@@ -157,6 +157,7 @@ def test_live_baseline_handles_features_missing_entirely_in_training() -> None:
     predictions = predict_live_probabilities(model, test)
 
     assert len(predictions) == len(test)
+    assert "position_position" in predictions.columns
     sums = predictions.groupby(["session_key", "lap_number"])["win_probability"].sum()
     assert np.allclose(sums.to_numpy(), 1.0)
     assert np.isfinite(predictions["win_probability"]).all()
