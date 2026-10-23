@@ -40,7 +40,18 @@ Raw provider data is intentionally ignored by git. The repository stores ingesti
 
 ## Build historical race-state features
 
-For the current no-paid-API path, use Jolpica race laps and pit stops:
+**Preferred recovery path when Jolpica returns persistent HTTP 429:** use the static TracingInsights/RaceData archive. It is a public release ZIP, needs no API key, and is cached locally after the first download:
+
+```bash
+python -m f1_predict.ingestion.static_race_state \
+  --start-year 2023 \
+  --end-year 2025 \
+  --output data/processed/features/jolpica_race_state_enriched.parquet
+```
+
+The archive provides historical race metadata, results, lap times, lap-end positions and pit stops. The source repository identifies its dataset license as CC0 1.0. This path does not call Jolpica endpoints.
+
+The original API-based path remains available when the provider is healthy:
 
 ```bash
 python -m f1_predict.ingestion.jolpica_race_state \
@@ -49,7 +60,7 @@ python -m f1_predict.ingestion.jolpica_race_state \
   --output data/processed/features/jolpica_race_state_enriched.parquet
 ```
 
-This dataset reconstructs approximate race-state features from published lap timing and results. It does **not** provide reliable live timing, tyre compound, or weather observations; unavailable features must remain missing, not be fabricated. Treat the reconstructed data as a separate experimental dataset and audit it before model comparison.
+The static archive's race-state timestamps are approximate race-day anchors plus cumulative lap times, not official timing-feed timestamps. Weather and tyre-compound features remain missing unless explicitly present in the source. Audit the resulting dataset before model comparison, and do not present it as live timing.
 
 ## Quick start in Codespaces
 
