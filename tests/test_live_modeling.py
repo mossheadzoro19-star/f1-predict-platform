@@ -133,3 +133,30 @@ def test_live_evaluation_skips_snapshot_when_winner_is_absent(capsys) -> None:
     assert metrics.races == 1
     assert metrics.winner_accuracy == 1.0
     assert "scorable_coverage = 0.5000" in capsys.readouterr().out
+
+def test_live_baseline_handles_features_missing_entirely_in_training() -> None:
+    train = pd.DataFrame(_rows(2023, "train-empty", 1, laps=3))
+    test = pd.DataFrame(_rows(2024, "test-empty", 2, laps=2))
+
+    entirely_missing = [
+        "interval_laps_behind_leader",
+        "interval_laps_behind_car_ahead",
+        "stint_tyre_age_at_start",
+        "weather_air_temperature",
+        "weather_track_temperature",
+        "weather_humidity",
+        "weather_rainfall",
+        "weather_wind_speed",
+    ]
+    train[entirely_missing] = np.nan
+    test[entirely_missing] = np.nan
+    train["stint_compound"] = None
+    test["stint_compound"] = None
+
+    model = fit_live_baseline(train)
+    predictions = predict_live_probabilities(model, test)
+
+    assert len(predictions) == len(test)
+    sums = predictions.groupby(["session_key", "lap_number"])["win_probability"].sum()
+    assert np.allclose(sums.to_numpy(), 1.0)
+    assert np.isfinite(predictions["win_probability"]).all()
