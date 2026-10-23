@@ -124,6 +124,7 @@ def predict_live_probabilities(
             "driver_number",
             "lap_number",
             "prediction_time",
+            "position_position",
             "winner",
         ]
     ].copy()
