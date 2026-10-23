@@ -164,6 +164,7 @@ def confidence_diagnostics(predictions: pd.DataFrame, bins: int = 10) -> pd.Data
             empirical_accuracy=("correct", "mean"),
         )
         .reset_index()
+        .assign(confidence_bin=lambda result: result["confidence_bin"].astype(str))
     )
 
 
