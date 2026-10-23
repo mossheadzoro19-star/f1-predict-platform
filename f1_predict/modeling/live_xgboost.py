@@ -46,11 +46,11 @@ def build_live_xgboost(
     config = config or LiveXGBoostConfig()
 
     numeric_pipeline = Pipeline(
-        steps=[("imputer", SimpleImputer(strategy="median"))]
+        steps=[("imputer", SimpleImputer(strategy="median", keep_empty_features=True))]
     )
     categorical_pipeline = Pipeline(
         steps=[
-            ("imputer", SimpleImputer(strategy="most_frequent")),
+            ("imputer", SimpleImputer(strategy="most_frequent", keep_empty_features=True)),
             ("onehot", OneHotEncoder(handle_unknown="ignore")),
         ]
     )
