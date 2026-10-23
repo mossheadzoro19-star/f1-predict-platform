@@ -1,7 +1,10 @@
+import json
+
 import pandas as pd
 import pytest
 
 from f1_predict.modeling.race_state_evaluation import (
+    build_race_state_report,
     confidence_diagnostics,
     evaluate_race_state_predictions,
 )
@@ -37,3 +40,11 @@ def test_confidence_diagnostics_has_expected_columns():
     result = confidence_diagnostics(_fixture(), bins=5)
 
     assert {"snapshots", "mean_confidence", "empirical_accuracy"} <= set(result.columns)
+
+
+def test_race_state_report_is_json_serializable():
+    report = build_race_state_report(_fixture())
+
+    encoded = json.dumps(report)
+
+    assert '"confidence_bin"' in encoded
