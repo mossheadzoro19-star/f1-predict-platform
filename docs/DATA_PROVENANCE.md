@@ -31,3 +31,13 @@ Reference: https://openf1.org/
 4. Re-check provider terms before public/commercial deployment.
 5. Preserve point-in-time correctness and clearly document reconstructed/approximate features.
 6. Never label cached, historical, reconstructed, or fallback data as LIVE.
+
+
+## Static historical archive fallback
+
+When the Jolpica API returns persistent HTTP 429 responses, use the public TracingInsights/RaceData release archive instead of repeatedly retrying the API. Its release archive contains historical race metadata, results, lap times, and pit stops; the repository identifies the dataset as CC0 1.0. The ingestion downloads and caches the ZIP locally, then builds the same platform feature schema without calling Jolpica endpoints.
+
+Source: https://github.com/TracingInsights/RaceData
+Release archive: https://github.com/TracingInsights/RaceData/releases/latest/download/data.zip
+
+The archive's lap-end positions and lap times are historical observations. The generated timestamp is an approximate race-day anchor plus cumulative lap time, not an official timing-feed timestamp. Tyre compound and weather remain missing unless a source explicitly provides them. Verify source freshness and licensing before public/commercial deployment.
