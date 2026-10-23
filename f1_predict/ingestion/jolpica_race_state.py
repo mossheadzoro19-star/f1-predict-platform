@@ -222,14 +222,52 @@ def build_race_state_dataset(
     end_year: int,
     output_path: Path,
 ) -> pd.DataFrame:
-    client = JolpicaClient(request_delay_seconds=0.5)
+    # Persist after every completed race. If the provider rate-limits a later
+    # request, rerunning this command can continue without refetching completed
+    # race timing data.
+    client = JolpicaClient(request_delay_seconds=2.0, max_retries=6)
     frames: list[pd.DataFrame] = []
+    if output_path.exists():
+        existing = pd.read_parquet(output_path)
+        if {"season", "session_key", "driver_number"}.issubset(existing.columns):
+            frames.append(existing)
+            print(
+                f"Resuming from checkpoint: {len(existing)} rows already saved.",
+                flush=True,
+            )
+
+    def checkpoint() -> None:
+        if not frames:
+            return
+        combined = pd.concat(frames, ignore_index=True)
+        combined = combined.drop_duplicates(
+            subset=["session_key", "driver_number", "lap_number"],
+            keep="last",
+        ).sort_values(
+            ["prediction_time", "season", "session_key", "driver_number"]
+        )
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        combined.to_parquet(output_path, index=False)
+
+    completed_sessions = (
+        set(pd.concat(frames, ignore_index=True)["session_key"].astype(int).unique())
+        if frames
+        else set()
+    )
 
     for year in range(start_year, end_year + 1):
         print(f"\n[{year}] Fetching season schedule...", flush=True)
-        schedule_payload = client.get_season_schedule(year)
-        print(f"[{year}] Fetching season results...", flush=True)
-        results_payload = client.get_season_results(year)
+        try:
+            schedule_payload = client.get_season_schedule(year)
+            print(f"[{year}] Fetching season results...", flush=True)
+            results_payload = client.get_season_results(year)
+        except Exception as exc:
+            print(
+                f"[{year}] Could not load season metadata; saved checkpoint "
+                f"will be kept. {type(exc).__name__}: {exc}",
+                flush=True,
+            )
+            continue
         print(f"[{year}] Season metadata loaded.", flush=True)
         # Jolpica's season-level results/schedule contain all races, while
         # lap/pit data are fetched once per race rather than once per driver.
@@ -247,6 +285,13 @@ def build_race_state_dataset(
 
         for schedule_race in schedule_rows:
             round_number = int(schedule_race["round"])
+            session_key = year * 100 + round_number
+            if session_key in completed_sessions:
+                print(
+                    f"RESUME {year} R{round_number:02d}: already present in checkpoint",
+                    flush=True,
+                )
+                continue
             try:
                 result_race = result_by_round[str(round_number)]
                 print(
@@ -261,9 +306,12 @@ def build_race_state_dataset(
                 )
                 if not frame.empty:
                     frames.append(frame)
+                    completed_sessions.add(session_key)
+                    checkpoint()
                 print(
                     f"OK {year} R{round_number:02d} "
-                    f"{schedule_race.get('raceName', '')}: {len(frame)} rows"
+                    f"{schedule_race.get('raceName', '')}: {len(frame)} rows",
+                    flush=True,
                 )
             except Exception as exc:
                 print(
@@ -274,11 +322,13 @@ def build_race_state_dataset(
     if not frames:
         raise RuntimeError("No Jolpica race-state data was collected.")
 
-    dataset = pd.concat(frames, ignore_index=True).sort_values(
+    checkpoint()
+    dataset = pd.concat(frames, ignore_index=True).drop_duplicates(
+        subset=["session_key", "driver_number", "lap_number"],
+        keep="last",
+    ).sort_values(
         ["prediction_time", "season", "session_key", "driver_number"]
     )
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    dataset.to_parquet(output_path, index=False)
     return dataset
 
 
