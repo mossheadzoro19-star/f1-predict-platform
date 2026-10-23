@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Evaluate race-level temperature scaling on validation data only."""
+"""Evaluate temperature scaling on validation or one final held-out season."""
 
 import argparse
 
@@ -150,9 +150,9 @@ def _make_oof_predictions(
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
-            "Compare raw and temperature-scaled unweighted XGBoost on validation only. "
-            "Temperature is fitted on expanding-window chronological OOF training predictions; "
-            "the test season is not evaluated."
+            "Compare raw and temperature-scaled unweighted XGBoost. Temperature is fitted "
+            "on expanding-window chronological OOF training predictions. Use --evaluate-test "
+            "for one final held-out season evaluation."
         )
     )
     parser.add_argument(
@@ -161,6 +161,11 @@ def main() -> None:
     )
     parser.add_argument("--train-end-year", type=int, default=2023)
     parser.add_argument("--validation-end-year", type=int, default=2024)
+    parser.add_argument(
+        "--evaluate-test",
+        action="store_true",
+        help="Treat the validation partition as the final held-out evaluation and allow no later season.",
+    )
     args = parser.parse_args()
 
     frame = pd.read_parquet(args.data)
@@ -168,16 +173,18 @@ def main() -> None:
         frame,
         train_end_year=args.train_end_year,
         validation_end_year=args.validation_end_year,
+        require_test=not args.evaluate_test,
     )
     contract = LiveFeatureContract.default()
+    evaluation_label = "FINAL HELD-OUT TEST" if args.evaluate_test else "VALIDATION"
 
     print(
-        "VALIDATION-ONLY XGBOOST TEMPERATURE CALIBRATION\n"
+        f"XGBOOST TEMPERATURE CALIBRATION — {evaluation_label}\n"
         f"TRAIN: {len(split.train):,} rows, "
         f"{split.train['session_key'].nunique()} races\n"
-        f"VALIDATION: {len(split.validation):,} rows, "
+        f"{evaluation_label}: {len(split.validation):,} rows, "
         f"{split.validation['session_key'].nunique()} races\n"
-        "The held-out test season is not evaluated."
+        + ("This is the final held-out evaluation; do not tune against these results." if args.evaluate_test else "The later held-out test season is not evaluated.")
     )
 
     print("\nGenerating expanding-window chronological OOF predictions from training races...")
@@ -201,7 +208,7 @@ def main() -> None:
         "TEMPERATURE CALIBRATED": build_race_state_report(calibrated_predictions),
     }
     print(f"Fitted temperature: {temperature:.4f}")
-    print("\nVALIDATION METRICS")
+    print(f"\n{evaluation_label} METRICS")
     print(
         f"{'Metric':<34}{'RAW':>12}{'CALIBRATED':>14}"
     )
