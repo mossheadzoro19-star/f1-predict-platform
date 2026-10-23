@@ -49,11 +49,19 @@ class JolpicaClient:
                 response.raise_for_status()
 
             retry_after = response.headers.get("Retry-After")
+            # Jolpica can temporarily throttle bulk lap requests. Honor a
+            # numeric Retry-After header and otherwise use capped exponential
+            # backoff so retries do not immediately hit the same limit again.
+            delay = min(2 ** (attempt + 1), 120)
             if retry_after and retry_after.isdigit():
-                delay = float(retry_after)
-            else:
-                delay = min(2**attempt, 30)
+                delay = max(delay, float(retry_after))
 
+            print(
+                f"Jolpica rate limit (429) for {path} "
+                f"offset={offset}; retry {attempt + 1}/{self.max_retries} "
+                f"in {delay:.0f}s",
+                flush=True,
+            )
             time.sleep(delay)
 
         raise RuntimeError("Unreachable Jolpica retry state")
