@@ -1,15 +1,18 @@
 # Roadmap
 
 ## NOW — Historical race-state milestone
-- [x] Historical Jolpica ingestion
-- [x] Point-in-time feature pipeline
-- [x] Leakage audit
-- [x] Live-state OLD dataset and baseline experiments
+- [x] Historical Jolpica season ingestion and normalization
+- [x] Point-in-time pre-race feature pipeline
+- [x] Pre-race leakage audit
+- [x] Old OpenF1-derived race-state dataset and baseline experiments
 - [x] Enriched live feature contract
-- [x] FastF1 historical race-state ingestion
-- [ ] Generate enriched 2023–2025 dataset
-- [ ] OLD vs ENRICHED XGBoost comparison (evaluation path ready)
+- [x] Jolpica race-state ingestion implementation
+- [ ] Generate/refresh 2023–2025 Jolpica race-state dataset
+- [ ] Audit Jolpica race-state coverage, reconstructed timing, labels, duplicates, and missingness
+- [ ] Verify point-in-time integrity of reconstructed snapshots
+- [ ] Compare old OpenF1-derived benchmark against Jolpica-derived data using the same evaluation protocol
 - [ ] Lock useful/weak features using untouched 2025 test
+- [ ] Keep FastF1 optional unless a compliant, no-cost data path is available
 
 ## NEXT — Free live provider
 - [ ] Select and validate free-access live timing provider
@@ -34,3 +37,4 @@
 - Paid live APIs
 - Deep learning without evidence
 - Microservices and unnecessary infrastructure
+- Treating reconstructed Jolpica snapshots as exact live timing
