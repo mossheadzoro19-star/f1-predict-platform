@@ -35,6 +35,7 @@ class LiveXGBoostConfig:
     min_child_weight: float = 5.0
     reg_lambda: float = 2.0
     random_state: int = 42
+    balance_classes: bool = True
 
 
 def build_live_xgboost(
@@ -97,14 +98,18 @@ def fit_live_xgboost(
     X, y = select_live_dataset(train, contract)
     model = build_live_xgboost(contract, config)
 
-    # The winner class is rare: one eventual winner among the drivers in each
-    # lap snapshot. Balance training gradients without changing the evaluation.
-    positives = int(y.sum())
-    negatives = int(len(y) - positives)
-    if positives == 0:
-        raise ValueError("Training data contains no winner observations")
-    classifier = model.named_steps["classifier"]
-    classifier.set_params(scale_pos_weight=negatives / positives)
+    # Class weighting can help classification, but it can also distort
+    # probability estimates. Keep it configurable for a validation-only
+    # calibration experiment; the default preserves the existing model.
+    if config is None:
+        config = LiveXGBoostConfig()
+    if config.balance_classes:
+        positives = int(y.sum())
+        negatives = int(len(y) - positives)
+        if positives == 0:
+            raise ValueError("Training data contains no winner observations")
+        classifier = model.named_steps["classifier"]
+        classifier.set_params(scale_pos_weight=negatives / positives)
 
     model.fit(X, y)
     return model
