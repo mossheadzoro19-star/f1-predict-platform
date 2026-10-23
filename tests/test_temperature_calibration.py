@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 
 from f1_predict.modeling.temperature_calibration_experiment import (
+    _chronological_session_folds,
     _fit_temperature,
     _multiclass_log_loss,
     _temperature_scale_predictions,
@@ -50,3 +51,23 @@ def test_fitted_temperature_is_finite_and_positive() -> None:
     temperature = _fit_temperature(_predictions())
     assert np.isfinite(temperature)
     assert temperature > 0
+
+def test_chronological_folds_never_train_on_future_races() -> None:
+    frame = pd.DataFrame(
+        [
+            {
+                "session_key": f"race{i}",
+                "prediction_time": pd.Timestamp("2023-01-01", tz="UTC")
+                + pd.Timedelta(days=i),
+            }
+            for i in range(9)
+        ]
+    )
+
+    folds = _chronological_session_folds(frame, n_splits=3, min_train_races=3)
+    assert folds
+    for train_sessions, heldout_sessions in folds:
+        train_dates = frame[frame["session_key"].isin(train_sessions)]["prediction_time"]
+        heldout_dates = frame[frame["session_key"].isin(heldout_sessions)]["prediction_time"]
+        assert train_dates.max() < heldout_dates.min()
+        assert set(train_sessions).isdisjoint(heldout_sessions)
