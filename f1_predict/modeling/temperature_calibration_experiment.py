@@ -7,7 +7,6 @@ import argparse
 import numpy as np
 import pandas as pd
 from scipy.optimize import minimize_scalar
-from sklearn.model_selection import GroupKFold
 
 from f1_predict.modeling.live_features import LiveFeatureContract
 from f1_predict.modeling.live_xgboost import (
@@ -83,24 +82,55 @@ def _fit_temperature(oof_predictions: pd.DataFrame) -> float:
     return float(np.exp(result.x))
 
 
+def _chronological_session_folds(
+    train: pd.DataFrame,
+    n_splits: int = 5,
+    min_train_races: int = 5,
+) -> list[tuple[list[object], list[object]]]:
+    """Build expanding-window folds; every training race predates held-out races."""
+    session_dates = (
+        train.groupby("session_key", sort=False)["prediction_time"]
+        .min()
+        .sort_values(kind="stable")
+    )
+    sessions = session_dates.index.to_list()
+    if len(sessions) <= min_train_races:
+        raise ValueError(
+            f"Need more than {min_train_races} training races for chronological calibration; "
+            f"found {len(sessions)}"
+        )
+
+    initial_size = max(min_train_races, len(sessions) // 3)
+    remaining = sessions[initial_size:]
+    folds = min(n_splits, len(remaining))
+    heldout_chunks = [chunk.tolist() for chunk in np.array_split(remaining, folds) if len(chunk)]
+    result: list[tuple[list[object], list[object]]] = []
+    for chunk in heldout_chunks:
+        first_heldout_date = session_dates.loc[chunk].min()
+        prior_sessions = session_dates[session_dates < first_heldout_date].index.to_list()
+        if not prior_sessions:
+            raise ValueError("Chronological calibration fold has no prior training races")
+        result.append((prior_sessions, chunk))
+    return result
+
+
 def _make_oof_predictions(
     train: pd.DataFrame,
     contract: LiveFeatureContract,
     n_splits: int = 5,
 ) -> pd.DataFrame:
-    """Generate predictions for each training race from a model that did not see it."""
-    sessions = train["session_key"].drop_duplicates().to_numpy()
-    folds = min(n_splits, len(sessions))
-    if folds < 2:
-        raise ValueError("At least two distinct training races are required for OOF calibration")
-
-    splitter = GroupKFold(n_splits=folds)
+    """Generate expanding-window OOF predictions without training on future races."""
     predictions: list[pd.DataFrame] = []
-    for train_indices, heldout_indices in splitter.split(sessions, groups=sessions):
-        fold_train_sessions = set(sessions[train_indices])
-        fold_heldout_sessions = set(sessions[heldout_indices])
-        fold_train = train[train["session_key"].isin(fold_train_sessions)]
-        fold_heldout = train[train["session_key"].isin(fold_heldout_sessions)]
+    for train_sessions, heldout_sessions in _chronological_session_folds(
+        train, n_splits=n_splits
+    ):
+        fold_train = train[train["session_key"].isin(train_sessions)]
+        fold_heldout = train[train["session_key"].isin(heldout_sessions)]
+
+        train_session_dates = fold_train.groupby("session_key")["prediction_time"].min()
+        heldout_session_dates = fold_heldout.groupby("session_key")["prediction_time"].min()
+        if train_session_dates.max() >= heldout_session_dates.min():
+            raise AssertionError("Chronological OOF fold includes a future race in training")
 
         model = fit_live_xgboost(
             fold_train,
@@ -110,8 +140,10 @@ def _make_oof_predictions(
         predictions.append(predict_live_probabilities(model, fold_heldout, contract))
 
     oof = pd.concat(predictions, ignore_index=True)
-    if oof["session_key"].nunique() != len(sessions):
-        raise AssertionError("OOF predictions do not cover every training race exactly")
+    if not oof["session_key"].nunique():
+        raise AssertionError("No chronological OOF predictions were generated")
+    if oof["session_key"].nunique() >= train["session_key"].nunique():
+        raise AssertionError("Initial chronological races should be excluded from OOF predictions")
     return oof
 
 
@@ -119,7 +151,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
             "Compare raw and temperature-scaled unweighted XGBoost on validation only. "
-            "Temperature is fitted on race-grouped out-of-fold training predictions; "
+            "Temperature is fitted on expanding-window chronological OOF training predictions; "
             "the test season is not evaluated."
         )
     )
@@ -148,7 +180,7 @@ def main() -> None:
         "The held-out test season is not evaluated."
     )
 
-    print("\nGenerating race-grouped out-of-fold predictions from training races...")
+    print("\nGenerating expanding-window chronological OOF predictions from training races...")
     oof_predictions = _make_oof_predictions(split.train, contract)
     temperature = _fit_temperature(oof_predictions)
 
