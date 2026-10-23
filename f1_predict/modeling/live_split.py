@@ -18,8 +18,9 @@ def chronological_live_race_split(
     frame: pd.DataFrame,
     train_end_year: int,
     validation_end_year: int,
+    require_test: bool = True,
 ) -> LiveTemporalSplit:
-    """Split complete OpenF1 sessions by season without shuffling rows."""
+    """Split complete sessions by season; optionally allow no later test partition."""
     required = {"season", "session_key", "prediction_time"}
     missing = required - set(frame.columns)
     if missing:
@@ -40,9 +41,9 @@ def chronological_live_race_split(
     ].copy()
     test = ordered[ordered["season"] > validation_end_year].copy()
 
-    if train.empty or validation.empty or test.empty:
+    if train.empty or validation.empty or (require_test and test.empty):
         raise ValueError(
-            "Temporal split produced an empty partition. "
+            "Temporal split produced an empty required partition. "
             f"Available seasons: {sorted(ordered['season'].unique().tolist())}"
         )
 
@@ -57,8 +58,4 @@ def chronological_live_race_split(
     ):
         raise AssertionError("A race session appears in more than one temporal partition")
 
-    return LiveTemporalSplit(
-        train=train,
-        validation=validation,
-        test=test,
-    )
+    return LiveTemporalSplit(train=train, validation=validation, test=test)
