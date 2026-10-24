@@ -129,8 +129,10 @@ def select_live_dataset(
     X = frame.reindex(columns=list(contract.features)).copy()
     y = frame.loc[:, contract.target].astype("int8").copy()
 
-    # Treat tyre compound as a categorical value, not an ordinal number.
-    # Use plain object dtype with np.nan for sklearn compatibility. Pandas\n    # StringDtype uses pd.NA, which can reach SimpleImputer and make comparisons\n    # such as ``value != value`` ambiguous in some sklearn/pandas combinations.\n    X["stint_compound"] = X["stint_compound"].astype("object")\n    X["stint_compound"] = X["stint_compound"].where(X["stint_compound"].notna(), None)
+    # Treat tyre compound as categorical, using object dtype and None for missing values.
+    # This avoids pandas StringDtype / pd.NA ambiguity in some sklearn versions.
+    X["stint_compound"] = X["stint_compound"].astype("object")
+    X["stint_compound"] = X["stint_compound"].where(X["stint_compound"].notna(), None)
 
     # OpenF1 may represent missing numeric observations with nulls. The model
     # pipeline is responsible for imputation; we preserve missingness here.
@@ -157,12 +159,14 @@ def validate_race_snapshot_targets(frame: pd.DataFrame) -> None:
 
 
 def validate_temporal_order(frame: pd.DataFrame) -> None:
-    """Reject backward prediction timestamps within the complete dataset."""
-    ordered = frame.sort_values(
-        ["prediction_time", "session_key", "driver_number"]
-    )
-    if (ordered["prediction_time"].diff().dropna() < pd.Timedelta(0)).any():
-        raise ValueError("Prediction timestamps are not globally chronological.")
+    """Reject backward timestamps within each driver's lap sequence."""
+    ordered = frame.sort_values(["session_key", "driver_number", "lap_number"])
+    for _, driver_laps in ordered.groupby(["session_key", "driver_number"], sort=False):
+        timestamps = pd.to_datetime(driver_laps["prediction_time"], utc=True)
+        if timestamps.diff().dropna().lt(pd.Timedelta(0)).any():
+            raise ValueError(
+                "Prediction timestamps move backward within a driver's lap sequence."
+            )
 
 
 def summarize_live_dataset(frame: pd.DataFrame) -> dict[str, object]:
