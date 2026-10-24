@@ -198,7 +198,14 @@ def build_race_state_from_tables(
         race_laps["interval_gap_to_leader"] = race_laps["gap"]
         race_laps["interval_laps_behind_leader"] = np.nan
         race_laps["interval_laps_behind_car_ahead"] = np.nan
-        race_laps["interval_interval"] = race_laps.groupby("lap")["gap"].diff()
+        # Interval to the car ahead follows lap-end position, not driver ID.
+        # The leader has no car-ahead interval, so its value remains missing.
+        race_laps["interval_interval"] = np.nan
+        for _, lap_group in race_laps.groupby("lap", sort=False):
+            ordered = lap_group.sort_values(
+                ["position_position", "gap"], na_position="last"
+            )
+            race_laps.loc[ordered.index, "interval_interval"] = ordered["gap"].diff()
         race_laps["stint_compound"] = None
         race_laps["stint_tyre_age_at_start"] = np.nan
         race_laps["previous_lap_duration"] = race_laps.groupby("driverId")[
