@@ -52,13 +52,14 @@ def test_fitted_temperature_is_finite_and_positive() -> None:
     assert np.isfinite(temperature)
     assert temperature > 0
 
+
 def test_chronological_folds_never_train_on_future_races() -> None:
     frame = pd.DataFrame(
         [
             {
                 "session_key": f"race{i}",
                 "prediction_time": pd.Timestamp("2023-01-01", tz="UTC")
-                + pd.Timedelta(days=i),
+                + pd.Timedelta(i, unit="D"),
             }
             for i in range(9)
         ]
