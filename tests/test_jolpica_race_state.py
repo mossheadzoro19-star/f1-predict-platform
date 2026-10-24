@@ -82,3 +82,55 @@ def test_build_race_state_returns_empty_without_lap_records() -> None:
     )
 
     assert frame.empty
+
+def test_multilap_features_do_not_cross_race_boundaries() -> None:
+    results = {
+        "Results": [
+            {"position": "1", "Driver": {"driverId": "driver_a"}},
+            {"position": "2", "Driver": {"driverId": "driver_b"}},
+        ]
+    }
+    laps = _payload(
+        [
+            {
+                "number": "1",
+                "Timings": [
+                    {"driverId": "driver_a", "time": "1:30.000"},
+                    {"driverId": "driver_b", "time": "1:31.000"},
+                ],
+            },
+            {
+                "number": "2",
+                "Timings": [
+                    {"driverId": "driver_a", "time": "1:32.000"},
+                    {"driverId": "driver_b", "time": "1:33.000"},
+                ],
+            },
+        ]
+    )
+
+    first_race = _build_race(
+        2023,
+        1,
+        {"date": "2023-03-05", "time": "15:00:00Z", "raceName": "Race One"},
+        results,
+        laps,
+        _payload([]),
+    )
+    second_race = _build_race(
+        2023,
+        2,
+        {"date": "2023-03-12", "time": "15:00:00Z", "raceName": "Race Two"},
+        results,
+        laps,
+        _payload([]),
+    )
+
+    combined = pd.concat([first_race, second_race], ignore_index=True)
+
+    # Each race has only two laps, so a three-lap shift must be missing
+    # everywhere. A non-null value would mean a shift crossed sessions.
+    assert combined["position_change_3_laps"].isna().all()
+    assert combined["gap_change_3_laps"].isna().all()
+    assert combined["interval_change_3_laps"].isna().all()
+
