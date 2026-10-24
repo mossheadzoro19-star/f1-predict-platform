@@ -45,3 +45,24 @@ def test_static_archive_builder_creates_point_in_time_race_rows() -> None:
     lap_two = frame.loc[frame["lap_number"] == 2].set_index("driver_number")
     assert lap_two.loc["driver_a", "previous_lap_duration"] == 90.0
     assert pd.to_datetime(frame["prediction_time"], utc=True).notna().all()
+
+def test_interval_is_calculated_by_track_position_not_driver_id() -> None:
+    races = pd.DataFrame(
+        [{"raceId": 9, "year": 2023, "round": 2, "name": "Ordering GP",
+          "date": "2023-03-12", "time": "15:00:00Z"}]
+    )
+    results = pd.DataFrame(
+        [{"raceId": 9, "driverId": "z_leader", "positionOrder": 1},
+         {"raceId": 9, "driverId": "a_trailer", "positionOrder": 2}]
+    )
+    laps = pd.DataFrame(
+        [{"raceId": 9, "driverId": "z_leader", "lap": 1, "position": 1, "milliseconds": 90000},
+         {"raceId": 9, "driverId": "a_trailer", "lap": 1, "position": 2, "milliseconds": 91000}]
+    )
+    pits = pd.DataFrame(columns=["raceId", "driverId", "lap", "stop"])
+
+    frame = build_race_state_from_tables(laps, races, results, pits, 2023, 2023)
+    lap = frame.set_index("driver_number")
+
+    assert pd.isna(lap.loc["z_leader", "interval_interval"])
+    assert lap.loc["a_trailer", "interval_interval"] == 1.0
