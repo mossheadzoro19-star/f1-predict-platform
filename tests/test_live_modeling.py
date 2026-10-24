@@ -11,6 +11,7 @@ from f1_predict.modeling.live_baseline import (
 )
 from f1_predict.modeling.live_split import chronological_live_race_split
 from f1_predict.modeling.live_features import validate_temporal_order
+from f1_predict.modeling.live_xgboost import LiveXGBoostConfig
 
 
 def _rows(season: int, session: str, winner: int, laps: int = 2) -> list[dict]:
@@ -175,3 +176,6 @@ def test_temporal_order_rejects_backward_time_within_driver_laps() -> None:
 
     with pytest.raises(ValueError, match="move backward"):
         validate_temporal_order(frame)
+
+def test_xgboost_probability_baseline_is_unweighted_by_default() -> None:
+    assert LiveXGBoostConfig().balance_classes is False
