@@ -194,13 +194,12 @@ def _build_race(
     if frame.empty:
         return frame
 
-    frame = pd.DataFrame(rows)
-    if frame.empty:
-        return frame
-
-    # Derive multi-lap dynamics from earlier observations only.
-    frame = frame.sort_values(["driver_number", "lap_number", "prediction_time"]).copy()
-    grouped = frame.groupby("driver_number", sort=False)
+    # Derive multi-lap dynamics from earlier observations in the same race
+    # and for the same driver. Lap numbers restart at every session.
+    frame = frame.sort_values(
+        ["session_key", "driver_number", "lap_number", "prediction_time"]
+    ).copy()
+    grouped = frame.groupby(["session_key", "driver_number"], sort=False)
     for window in (3, 5):
         frame[f"position_change_{window}_laps"] = (
             frame["position_position"]
