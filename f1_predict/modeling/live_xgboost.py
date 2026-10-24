@@ -35,7 +35,7 @@ class LiveXGBoostConfig:
     min_child_weight: float = 5.0
     reg_lambda: float = 2.0
     random_state: int = 42
-    balance_classes: bool = True
+    balance_classes: bool = False
 
 
 def build_live_xgboost(
