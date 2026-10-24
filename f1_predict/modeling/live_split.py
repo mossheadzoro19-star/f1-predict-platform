@@ -43,7 +43,7 @@ def chronological_live_race_split(
 
     if train.empty or validation.empty or (require_test and test.empty):
         raise ValueError(
-            "Temporal split produced an empty required partition. "
+            "Temporal split produced an empty partition among required partitions. "
             f"Available seasons: {sorted(ordered['season'].unique().tolist())}"
         )
 
