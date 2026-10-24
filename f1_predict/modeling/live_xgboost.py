@@ -98,9 +98,8 @@ def fit_live_xgboost(
     X, y = select_live_dataset(train, contract)
     model = build_live_xgboost(contract, config)
 
-    # Class weighting can help classification, but it can also distort
-    # probability estimates. Keep it configurable for a validation-only
-    # calibration experiment; the default preserves the existing model.
+    # Class weighting can distort probability estimates. It is opt-in and
+    # disabled by default for the probability-oriented baseline.
     if config is None:
         config = LiveXGBoostConfig()
     if config.balance_classes:
