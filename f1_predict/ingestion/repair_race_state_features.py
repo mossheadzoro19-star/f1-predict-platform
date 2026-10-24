@@ -29,7 +29,6 @@ def recompute_multi_lap_features(frame: pd.DataFrame) -> pd.DataFrame:
         raise ValueError(f"Duplicate historical observations for keys: {KEY_COLUMNS}")
 
     result = frame.copy()
-    result["driver_number"] = result["driver_number"].astype(str)
     result = result.sort_values(
         ["session_key", "driver_number", "lap_number"],
         kind="mergesort",
