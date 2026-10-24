@@ -10,6 +10,7 @@ from f1_predict.modeling.live_baseline import (
     predict_live_probabilities,
 )
 from f1_predict.modeling.live_split import chronological_live_race_split
+from f1_predict.modeling.live_features import validate_temporal_order
 
 
 def _rows(season: int, session: str, winner: int, laps: int = 2) -> list[dict]:
@@ -161,3 +162,16 @@ def test_live_baseline_handles_features_missing_entirely_in_training() -> None:
     sums = predictions.groupby(["session_key", "lap_number"])["win_probability"].sum()
     assert np.allclose(sums.to_numpy(), 1.0)
     assert np.isfinite(predictions["win_probability"]).all()
+
+def test_temporal_order_rejects_backward_time_within_driver_laps() -> None:
+    frame = pd.DataFrame(
+        [
+            {"session_key": "race", "driver_number": "1", "lap_number": 1,
+             "prediction_time": pd.Timestamp("2024-01-01T00:02:00Z")},
+            {"session_key": "race", "driver_number": "1", "lap_number": 2,
+             "prediction_time": pd.Timestamp("2024-01-01T00:01:00Z")},
+        ]
+    )
+
+    with pytest.raises(ValueError, match="move backward"):
+        validate_temporal_order(frame)
