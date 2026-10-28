@@ -90,6 +90,24 @@ def test_invalid_multiple_winners_are_rejected():
         validate_race_snapshot_targets(frame)
 
 
+def test_jolpica_historical_contract_excludes_unavailable_fields():
+    contract = LiveFeatureContract.jolpica_historical()
+    assert "position_position" in contract.features
+    assert "previous_lap_duration" in contract.features
+    assert "stint_compound" not in contract.features
+    assert "weather_air_temperature" not in contract.features
+    assert "stint_tyre_age_at_start" not in contract.features
+    X, y = select_live_dataset(_frame(), contract)
+    assert list(X.columns) == list(contract.features)
+    assert len(X) == len(y)
+
+
+def test_select_live_dataset_rejects_missing_contract_feature():
+    frame = _frame().drop(columns=["position_change_3_laps"])
+    with pytest.raises(ValueError, match="Missing live predictor columns"):
+        select_live_dataset(frame)
+
+
 def test_live_dataset_summary():
     summary = summarize_live_dataset(_frame())
     assert summary["rows"] == 8
