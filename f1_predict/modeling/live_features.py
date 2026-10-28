@@ -54,6 +54,29 @@ LIVE_CATEGORICAL_FEATURES = [
     "stint_compound",
 ]
 
+# Jolpica/static race-state archive contract. This intentionally excludes fields
+# that are entirely unavailable in that archive (weather, tyre data and
+# lap-behind counts) instead of allowing reindex() to silently synthesize nulls.
+JOLPICA_HISTORICAL_NUMERIC_FEATURES = [
+    "lap_number",
+    "position_position",
+    "interval_gap_to_leader",
+    "interval_interval",
+    "position_change_1_lap",
+    "position_change_3_laps",
+    "position_change_5_laps",
+    "gap_change_1_lap",
+    "gap_change_3_laps",
+    "gap_change_5_laps",
+    "interval_change_1_lap",
+    "interval_change_3_laps",
+    "interval_change_5_laps",
+    "previous_lap_duration",
+    "previous_3_lap_mean",
+    "pit_stops_completed",
+    "laps_since_pit",
+]
+
 
 @dataclass(frozen=True)
 class LiveFeatureContract:
@@ -80,6 +103,15 @@ class LiveFeatureContract:
             target=TARGET_COLUMN,
         )
 
+    @classmethod
+    def jolpica_historical(cls) -> "LiveFeatureContract":
+        """Feature contract for the static/Jolpica archive with unavailable fields excluded."""
+        return cls(
+            numeric_features=tuple(JOLPICA_HISTORICAL_NUMERIC_FEATURES),
+            categorical_features=(),
+            target=TARGET_COLUMN,
+        )
+
     @property
     def features(self) -> tuple[str, ...]:
         return self.numeric_features + self.categorical_features
@@ -101,6 +133,10 @@ def validate_live_feature_contract(
     missing = sorted(required - set(frame.columns))
     if missing:
         raise ValueError(f"Missing live race-state columns: {missing}")
+
+    missing_features = sorted(set(contract.features) - set(frame.columns))
+    if missing_features:
+        raise ValueError(f"Missing live predictor columns: {missing_features}")
 
     numeric_duplicates = pd.Index(contract.numeric_features).duplicated().any()
     if numeric_duplicates:
@@ -129,10 +165,11 @@ def select_live_dataset(
     X = frame.reindex(columns=list(contract.features)).copy()
     y = frame.loc[:, contract.target].astype("int8").copy()
 
-    # Treat tyre compound as categorical, using object dtype and None for missing values.
-    # This avoids pandas StringDtype / pd.NA ambiguity in some sklearn versions.
-    X["stint_compound"] = X["stint_compound"].astype("object")
-    X["stint_compound"] = X["stint_compound"].where(X["stint_compound"].notna(), None)
+    # Treat string categories as object dtype and use None for missing values.
+    # The archive-specific contract may intentionally have no categorical fields.
+    for column in contract.categorical_features:
+        X[column] = X[column].astype("object")
+        X[column] = X[column].where(X[column].notna(), None)
 
     # OpenF1 may represent missing numeric observations with nulls. The model
     # pipeline is responsible for imputation; we preserve missingness here.
