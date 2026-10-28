@@ -235,16 +235,21 @@ def main() -> None:
     )
     parser.add_argument("--train-end-year", type=int, default=2023)
     parser.add_argument("--validation-end-year", type=int, default=2024)
-    parser.add_argument("--contract", choices=("enriched", "old"), default="enriched")
+    parser.add_argument(
+        "--contract",
+        choices=("enriched", "old", "jolpica"),
+        default="enriched",
+        help="Use the enriched live contract, frozen old contract, or archive-specific Jolpica contract.",
+    )
     args = parser.parse_args()
 
     from f1_predict.modeling.live_features import LiveFeatureContract
 
-    contract = (
-        LiveFeatureContract.old()
-        if args.contract == "old"
-        else LiveFeatureContract.default()
-    )
+    contract = {
+        "enriched": LiveFeatureContract.default,
+        "old": LiveFeatureContract.old,
+        "jolpica": LiveFeatureContract.jolpica_historical,
+    }[args.contract]()
     report = evaluate_current_xgboost(
         pd.read_parquet(args.data),
         train_end_year=args.train_end_year,
