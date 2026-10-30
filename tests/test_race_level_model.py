@@ -41,6 +41,31 @@ def test_conditional_logit_reports_successful_optimization():
     assert model.optimization_["success"] is True
 
 
+def test_conditional_logit_analytic_gradient_matches_finite_difference():
+    model = ConditionalLogitRaceModel(l2_strength=0.2)
+    matrix = np.array([
+        [-1.0, 0.5],
+        [0.2, -0.3],
+        [0.8, 1.1],
+        [-0.4, 0.7],
+    ])
+    groups = [np.array([0, 1]), np.array([2, 3])]
+    targets = np.array([1.0, 0.0, 0.0, 1.0])
+    beta = np.array([0.15, -0.25])
+    _, analytic = model._objective(beta, matrix, groups, targets)
+
+    epsilon = 1e-6
+    numeric = np.zeros_like(beta)
+    for index in range(len(beta)):
+        step = np.zeros_like(beta)
+        step[index] = epsilon
+        plus = model._objective(beta + step, matrix, groups, targets)[0]
+        minus = model._objective(beta - step, matrix, groups, targets)[0]
+        numeric[index] = (plus - minus) / (2 * epsilon)
+
+    assert np.allclose(analytic, numeric, rtol=1e-5, atol=1e-7)
+
+
 def test_prediction_requires_fitted_model():
     with pytest.raises(RuntimeError, match="fitted"):
         ConditionalLogitRaceModel().predict_race_probabilities(_frame())
