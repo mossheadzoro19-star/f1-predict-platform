@@ -113,7 +113,7 @@ def test_top_choice_reliability_uses_race_hit_rate():
         "predicted_winner_probability": [0.6, 0.7, 0.8, 0.9],
         "top_prediction_correct": [True, False, True, False],
     })
-    result = audit.build_top_choice_reliability_bins(race_audit, bins=2)
+    result = audit.build_top_choice_reliability_bins(race_audit, bins=4)
 
     assert result["races"].sum() == 4
     assert result["top_pick_hit_rate"].tolist() == pytest.approx([0.5, 0.5])
