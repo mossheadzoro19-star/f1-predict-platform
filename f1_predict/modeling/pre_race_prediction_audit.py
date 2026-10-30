@@ -390,13 +390,7 @@ def run_prediction_audit(
             "then report performance on the same folds."
         ),
     }
-    return summary, predictions, race_audit, candidate_bins.merge(
-        top_bins,
-        how="outer",
-        left_index=True,
-        right_index=True,
-        suffixes=("_candidate", "_top_choice"),
-    )
+    return summary, predictions, race_audit, candidate_bins
 
 
 def main() -> None:
