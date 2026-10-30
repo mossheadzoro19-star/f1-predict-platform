@@ -19,8 +19,10 @@ Default validation seasons: 2021, 2022, 2023 and 2024. Each validation season is
 ## Feature sets
 
 - `full_baseline`: all existing model features.
-- `no_career_dominance`: baseline without cumulative driver/constructor starts, wins, win rates and constructor cumulative points. Recent form and circuit history remain.
-- `recent_form_qualifying`: qualifying/grid context, recent driver and constructor form, DNF rates and driver circuit history; excludes career win/start totals and cumulative constructor points.
+- `no_career_dominance`: baseline without cumulative driver/constructor wins, win rates and constructor cumulative points. Prior driver and constructor starts remain as experience signals; recent form and circuit history remain.
+- `recent_form_qualifying`: qualifying/grid context, recent driver and constructor form, DNF rates and driver circuit history; excludes all career start/win totals, win rates and cumulative constructor points.
+
+These two groups are intentionally distinct: the first retains prior-start experience, while the second removes all career-total features.
 - `qualifying_only`: field size, grid and qualifying position/time/gap features.
 - `history_only`: driver/constructor career and recent history plus driver circuit history; excludes grid and qualifying features.
 
