@@ -56,8 +56,14 @@ def test_evaluation_scores_uniform_three_driver_distribution():
     metrics = evaluate_predictions(predictions)
 
     assert metrics["races"] == 2
+    assert metrics["winner_accuracy"] == pytest.approx(1 / 3)
     assert metrics["log_loss"] == pytest.approx(np.log(3))
     assert metrics["multiclass_brier_score"] == pytest.approx(2 / 3)
+    assert metrics["top_label_ece"] == pytest.approx(0.0)
+    assert len(metrics["reliability_bins"]) == 1
+    assert metrics["reliability_bins"][0]["races"] == 2
+    assert metrics["reliability_bins"][0]["mean_confidence"] == pytest.approx(1 / 3)
+    assert metrics["reliability_bins"][0]["observed_win_rate"] == pytest.approx(1 / 3)
 
 
 def test_dataset_validation_rejects_duplicate_rows():
@@ -74,3 +80,19 @@ def test_dataset_validation_rejects_races_without_exactly_one_winner():
 
     with pytest.raises(ValueError, match="exactly one winner"):
         validate_dataset(frame)
+
+def test_tied_top_predictions_receive_fractional_winner_credit():
+    predictions = pd.DataFrame(
+        [
+            {"season": 2024, "round": 1, "driver_id": "a", "winner": 1, "win_probability": 0.5},
+            {"season": 2024, "round": 1, "driver_id": "b", "winner": 0, "win_probability": 0.5},
+            {"season": 2024, "round": 2, "driver_id": "a", "winner": 0, "win_probability": 0.6},
+            {"season": 2024, "round": 2, "driver_id": "b", "winner": 1, "win_probability": 0.4},
+        ]
+    )
+
+    metrics = evaluate_predictions(predictions)
+
+    assert metrics["winner_accuracy"] == pytest.approx(0.5)
+    assert metrics["top_label_ece"] == pytest.approx(0.05)
+
