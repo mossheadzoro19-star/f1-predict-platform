@@ -109,7 +109,8 @@ def uniform_predictions(frame: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-def evaluate_predictions(predictions: pd.DataFrame) -> dict[str, float | int]:
+def evaluate_predictions(predictions: pd.DataFrame) -> dict[str, Any]:
+    """Evaluate race-level probabilities, giving tied top predictions fractional credit."""
     required = set(ROW_KEYS + ["winner", "win_probability"])
     missing = required - set(predictions.columns)
     if missing:
@@ -117,7 +118,10 @@ def evaluate_predictions(predictions: pd.DataFrame) -> dict[str, float | int]:
 
     losses: list[float] = []
     briers: list[float] = []
-    correct: list[bool] = []
+    winner_credits: list[float] = []
+    top_confidences: list[float] = []
+    top_outcomes: list[float] = []
+
     for key, race in predictions.groupby(RACE_KEYS, sort=True):
         if int(race["winner"].sum()) != 1:
             raise ValueError(f"Race {key} must have exactly one winner")
@@ -129,17 +133,53 @@ def evaluate_predictions(predictions: pd.DataFrame) -> dict[str, float | int]:
         ):
             raise ValueError(f"Race {key} probabilities must sum to one")
 
-        winner_index = int(np.flatnonzero(race["winner"].to_numpy() == 1)[0])
-        losses.append(-float(np.log(np.clip(probabilities[winner_index], 1e-15, 1.0))))
         target = race["winner"].to_numpy(dtype=float)
+        winner_index = int(np.flatnonzero(target == 1)[0])
+        losses.append(-float(np.log(np.clip(probabilities[winner_index], 1e-15, 1.0))))
         briers.append(float(np.sum((probabilities - target) ** 2)))
-        correct.append(int(np.argmax(probabilities)) == winner_index)
+
+        top_probability = float(probabilities.max())
+        tied_top = np.isclose(probabilities, top_probability, rtol=1e-12, atol=1e-12)
+        winner_credits.append(float(target[tied_top].sum() / tied_top.sum()))
+        top_confidences.append(top_probability)
+        top_outcomes.append(float(target[tied_top].sum() / tied_top.sum()))
+
+    # Top-pick expected calibration error: compare confidence with fractional
+    # winner credit in fixed-width confidence bins.
+    edges = np.linspace(0.0, 1.0, 11)
+    reliability_bins: list[dict[str, float | int]] = []
+    calibration_error = 0.0
+    confidence_array = np.asarray(top_confidences)
+    outcome_array = np.asarray(top_outcomes)
+    for index in range(len(edges) - 1):
+        lower, upper = float(edges[index]), float(edges[index + 1])
+        mask = (confidence_array >= lower) & (
+            confidence_array <= upper if index == len(edges) - 2
+            else confidence_array < upper
+        )
+        count = int(mask.sum())
+        if not count:
+            continue
+        mean_confidence = float(confidence_array[mask].mean())
+        observed_win_rate = float(outcome_array[mask].mean())
+        calibration_error += count / len(confidence_array) * abs(
+            mean_confidence - observed_win_rate
+        )
+        reliability_bins.append({
+            "lower_bound": lower,
+            "upper_bound": upper,
+            "races": count,
+            "mean_confidence": mean_confidence,
+            "observed_win_rate": observed_win_rate,
+        })
 
     return {
         "races": len(losses),
-        "winner_accuracy": float(np.mean(correct)),
+        "winner_accuracy": float(np.mean(winner_credits)),
         "log_loss": float(np.mean(losses)),
         "multiclass_brier_score": float(np.mean(briers)),
+        "top_label_ece": float(calibration_error),
+        "reliability_bins": reliability_bins,
     }
 
 
@@ -212,6 +252,14 @@ def run_experiment(
         name: evaluate_predictions(prediction)
         for name, prediction in predictions.items()
     }
+    season_metrics: dict[str, dict[str, dict[str, Any]]] = {}
+    for season in sorted(validation["season"].unique().astype(int).tolist()):
+        season_metrics[str(season)] = {
+            name: evaluate_predictions(
+                prediction[prediction["season"] == season]
+            )
+            for name, prediction in predictions.items()
+        }
     metadata = {
         "train_seasons": sorted(train["season"].unique().astype(int).tolist()),
         "validation_seasons": sorted(validation["season"].unique().astype(int).tolist()),
@@ -219,6 +267,7 @@ def run_experiment(
         "validation_races": int(validation[RACE_KEYS].drop_duplicates().shape[0]),
         "feature_columns": FEATURE_COLUMNS,
         "metrics": metrics,
+        "season_metrics": season_metrics,
     }
     artifacts = {
         "logistic_regression": logistic,
@@ -271,14 +320,28 @@ def main() -> None:
     print(f"Validation seasons: {metadata['validation_seasons']}")
     print(f"Validation races: {metadata['validation_races']}")
     print("\nMetrics (one probability distribution per race)")
-    print(f"{'Model':<24}{'Accuracy':>12}{'Log loss':>12}{'Brier':>12}")
-    print("-" * 60)
+    print(
+        f"{'Model':<24}{'Accuracy':>12}{'Log loss':>12}"
+        f"{'Brier':>12}{'Top ECE':>12}"
+    )
+    print("-" * 72)
     for name, values in metadata["metrics"].items():
         print(
             f"{name:<24}{values['winner_accuracy']:>12.4f}"
             f"{values['log_loss']:>12.4f}"
             f"{values['multiclass_brier_score']:>12.4f}"
+            f"{values['top_label_ece']:>12.4f}"
         )
+    print("\nSeason-by-season validation")
+    for season, season_results in metadata["season_metrics"].items():
+        print(f"  {season}:")
+        for name, values in season_results.items():
+            print(
+                f"    {name:<22} accuracy={values['winner_accuracy']:.4f} "
+                f"log_loss={values['log_loss']:.4f} "
+                f"brier={values['multiclass_brier_score']:.4f} "
+                f"top_ECE={values['top_label_ece']:.4f}"
+            )
     print(f"\nModel artifact: {args.model_output}")
     print(f"Metrics report: {args.report_output}")
     print("2025 was not loaded or evaluated.")
