@@ -38,6 +38,15 @@ def build_race_audit(
         .drop_duplicates(RACE_KEYS)
         if metadata_columns else frame[RACE_KEYS].drop_duplicates()
     )
+    feature_lookup = frame.set_index(RACE_KEYS + ["driver_id"], drop=False)
+    diagnostic_features = [
+        "qualifying_position", "grid", "qualifying_gap_to_pole_seconds",
+        "teammate_q3_gap_seconds", "driver_points_last_5",
+        "driver_prior_win_rate", "driver_prior_dnf_rate",
+        "constructor_prior_points", "constructor_prior_dnf_rate",
+        "driver_circuit_prior_starts",
+    ]
+    available_features = [name for name in diagnostic_features if name in frame.columns]
     rows: list[dict[str, Any]] = []
 
     for key, race in predictions.groupby(RACE_KEYS, sort=True):
@@ -70,6 +79,10 @@ def build_race_audit(
             .loc[race["driver_id"] == actual_winner].iloc[0]
         )
 
+        actual_feature_row = feature_lookup.loc[(key[0], key[1], actual_winner)]
+        predicted_driver = str(race.iloc[0]["driver_id"])
+        predicted_feature_row = feature_lookup.loc[(key[0], key[1], predicted_driver)]
+
         row: dict[str, Any] = {
             "season": int(key[0]),
             "round": int(key[1]),
@@ -83,6 +96,9 @@ def build_race_audit(
             "top_prediction_correct": bool(actual_in_top_tie),
             "field_size": int(len(race)),
         }
+        for feature in available_features:
+            row[f"actual_winner_{feature}"] = actual_feature_row[feature]
+            row[f"predicted_winner_{feature}"] = predicted_feature_row[feature]
         rows.append(row)
 
     audit = pd.DataFrame(rows)
@@ -154,7 +170,12 @@ def run_diagnostics(
             "actual_winner_probability", ascending=True
         ).head(10)[
             RACE_KEYS + ["actual_winner_driver_id", "predicted_winner_driver_id",
-                         "actual_winner_probability", "actual_winner_probability_rank"]
+                         "actual_winner_probability", "actual_winner_probability_rank",
+                         "actual_winner_qualifying_position", "actual_winner_grid",
+                         "actual_winner_qualifying_gap_to_pole_seconds",
+                         "actual_winner_driver_points_last_5",
+                         "actual_winner_driver_prior_win_rate",
+                         "actual_winner_constructor_prior_points"]
         ].to_dict(orient="records"),
         "holdout_policy": "2025 was not loaded or evaluated.",
         "importance_method": "XGBoost booster gain; fitted on training seasons only.",
@@ -222,7 +243,9 @@ def main() -> None:
         .head(10)[
             ["season", "round", "actual_winner_driver_id",
              "predicted_winner_driver_id", "actual_winner_probability",
-             "actual_winner_probability_rank"]
+             "actual_winner_probability_rank", "actual_winner_qualifying_position",
+             "actual_winner_grid", "actual_winner_qualifying_gap_to_pole_seconds",
+             "actual_winner_driver_points_last_5"]
         ].to_string(index=False)
     )
     print(f"\nRace audit: {audit_path}")
