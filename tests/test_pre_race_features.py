@@ -137,4 +137,21 @@ def test_enhanced_features_are_point_in_time_and_teammate_relative():
     assert driver_a_second["constructor_points_last_3"] == 25.0
     assert driver_a_second["constructor_prior_dnf_rate"] == 0.0
     assert driver_b_second["constructor_prior_dnf_rate"] == 1.0
-    assert driver_a_second["teammate_q3_gap_seconds"] == pytest.approx(-0.8)
+    assert pd.isna(driver_a_second["teammate_q3_gap_seconds"])
+
+def test_teammate_q3_gap_is_computed_for_actual_teammates():
+    races, results, qualifying = _inputs()
+    # Make both drivers members of the same constructor for round 2.
+    results.loc[
+        (results["round"] == 2) & (results["driver_id"] == "driver-b"),
+        "constructor_id",
+    ] = "team-a"
+
+    features = build_pre_race_features(races, results, qualifying)
+    second = features[features["round"] == 2]
+    driver_a = second[second["driver_id"] == "driver-a"].iloc[0]
+    driver_b = second[second["driver_id"] == "driver-b"].iloc[0]
+
+    assert driver_a["teammate_q3_gap_seconds"] == pytest.approx(-0.8)
+    assert driver_b["teammate_q3_gap_seconds"] == pytest.approx(0.8)
+
