@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from f1_predict.modeling.pre_race_diagnostics import build_race_audit
 from f1_predict.modeling.pre_race_model import (
     FEATURE_COLUMNS,
     chronological_split,
@@ -95,4 +96,37 @@ def test_tied_top_predictions_receive_fractional_winner_credit():
 
     assert metrics["winner_accuracy"] == pytest.approx(0.25)
     assert metrics["top_label_ece"] == pytest.approx(0.3)
+
+def test_race_level_audit_records_actual_and_predicted_winners():
+    frame = pd.DataFrame(
+        [
+            {"season": 2024, "round": 1, "driver_id": "a", "winner": 1,
+             "race_name": "Test Grand Prix"},
+            {"season": 2024, "round": 1, "driver_id": "b", "winner": 0,
+             "race_name": "Test Grand Prix"},
+            {"season": 2024, "round": 2, "driver_id": "a", "winner": 0,
+             "race_name": "Second Grand Prix"},
+            {"season": 2024, "round": 2, "driver_id": "b", "winner": 1,
+             "race_name": "Second Grand Prix"},
+        ]
+    )
+    predictions = frame[["season", "round", "driver_id", "winner"]].copy()
+    predictions["win_probability"] = [0.7, 0.3, 0.6, 0.4]
+
+    audit = build_race_audit(frame, predictions)
+
+    assert len(audit) == 2
+    first = audit[audit["round"] == 1].iloc[0]
+    second = audit[audit["round"] == 2].iloc[0]
+    assert first["actual_winner_driver_id"] == "a"
+    assert first["predicted_winner_driver_id"] == "a"
+    assert bool(first["top_prediction_correct"])
+    assert first["actual_winner_probability"] == pytest.approx(0.7)
+    assert first["actual_winner_probability_rank"] == 1
+    assert second["actual_winner_driver_id"] == "b"
+    assert second["predicted_winner_driver_id"] == "a"
+    assert not bool(second["top_prediction_correct"])
+    assert second["actual_winner_probability"] == pytest.approx(0.4)
+    assert second["actual_winner_probability_rank"] == 2
+    assert second["race_name"] == "Second Grand Prix"
 
