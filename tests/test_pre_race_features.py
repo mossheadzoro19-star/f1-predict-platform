@@ -126,7 +126,7 @@ def test_enhanced_features_are_point_in_time_and_teammate_relative():
     driver_b_first = first[first["driver_id"] == "driver-b"].iloc[0]
     assert driver_a_first["field_size"] == 2
     assert driver_a_first["qualifying_gap_to_pole_seconds"] == 0.0
-    assert driver_a_first["teammate_q3_gap_seconds"] is None
+    assert pd.isna(driver_a_first["teammate_q3_gap_seconds"])
     assert driver_b_first["qualifying_gap_to_pole_seconds"] == 1.0
 
     driver_a_second = second[second["driver_id"] == "driver-a"].iloc[0]
