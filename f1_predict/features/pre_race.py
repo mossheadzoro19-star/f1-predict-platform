@@ -187,8 +187,8 @@ def build_pre_race_features(
                     float(ch["wins"]) / int(ch["starts"]) if ch["starts"] else 0.0
                 ),
                 "constructor_prior_dnf_rate": (
-                    float(sum(ch["dnfs"])) / (2 * int(ch["starts"]))
-                    if ch["starts"] else 0.0
+                    float(sum(ch["dnfs"])) / int(ch["entries"])
+                    if ch["entries"] else 0.0
                 ),
                 "driver_circuit_prior_starts": int(cih["starts"]),
                 "driver_circuit_finish_last_3": _mean(cih["finishes"], 3),
@@ -229,9 +229,14 @@ def build_pre_race_features(
             if numeric_position == 1.0:
                 constructor_race_wins[constructor_id] += 1
 
+        constructor_race_entries: dict[str, int] = defaultdict(int)
+        for result in race_results.to_dict("records"):
+            constructor_race_entries[str(result["constructor_id"])] += 1
+
         for constructor_id, race_points in constructor_race_points.items():
             ch = constructor_history[constructor_id]
             ch["starts"] += 1
+            ch["entries"] += constructor_race_entries[constructor_id]
             ch["points"].append(race_points)
             ch["dnfs"].append(constructor_race_dnfs[constructor_id])
             ch["wins"] += constructor_race_wins[constructor_id]
