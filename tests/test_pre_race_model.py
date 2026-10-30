@@ -101,13 +101,17 @@ def test_race_level_audit_records_actual_and_predicted_winners():
     frame = pd.DataFrame(
         [
             {"season": 2024, "round": 1, "driver_id": "a", "winner": 1,
-             "race_name": "Test Grand Prix"},
+             "race_name": "Test Grand Prix", "qualifying_position": 1, "grid": 1,
+             "driver_points_last_5": 80.0},
             {"season": 2024, "round": 1, "driver_id": "b", "winner": 0,
-             "race_name": "Test Grand Prix"},
+             "race_name": "Test Grand Prix", "qualifying_position": 2, "grid": 2,
+             "driver_points_last_5": 20.0},
             {"season": 2024, "round": 2, "driver_id": "a", "winner": 0,
-             "race_name": "Second Grand Prix"},
+             "race_name": "Second Grand Prix", "qualifying_position": 2, "grid": 2,
+             "driver_points_last_5": 30.0},
             {"season": 2024, "round": 2, "driver_id": "b", "winner": 1,
-             "race_name": "Second Grand Prix"},
+             "race_name": "Second Grand Prix", "qualifying_position": 1, "grid": 1,
+             "driver_points_last_5": 70.0},
         ]
     )
     predictions = frame[["season", "round", "driver_id", "winner"]].copy()
@@ -129,4 +133,8 @@ def test_race_level_audit_records_actual_and_predicted_winners():
     assert second["actual_winner_probability"] == pytest.approx(0.4)
     assert second["actual_winner_probability_rank"] == 2
     assert second["race_name"] == "Second Grand Prix"
+    assert first["actual_winner_qualifying_position"] == 1
+    assert first["predicted_winner_qualifying_position"] == 1
+    assert second["actual_winner_driver_points_last_5"] == 70.0
+    assert second["predicted_winner_driver_points_last_5"] == 30.0
 
