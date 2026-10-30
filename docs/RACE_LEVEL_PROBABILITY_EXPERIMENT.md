@@ -26,17 +26,26 @@ This creates a probability distribution, but the binary training objective is no
 
 Let x_ir in R^p be the pre-race feature vector for driver i in race r, and beta in R^p be shared coefficients.
 
-    u_ir = x_ir^T beta
+\\[
+u_{ir} = x_{ir}^{\\top}\\beta
+\\]
 
 There is no global intercept. A term constant across every driver in a race cancels in the within-race softmax and is not identifiable.
 
 ### Race-level winner probability
 
-    P(Y_ir = 1 | X_r) = exp(u_ir) / sum(j in race r) exp(u_jr)
+\\[
+P(Y_{ir}=1 \\mid X_r)
+=
+\\frac{\\exp(u_{ir})}
+{\\sum_{j\\in r}\\exp(u_{jr})}
+\\]
 
 For each race:
 
-    sum(i in race r) P(Y_ir = 1 | X_r) = 1
+\\[
+\\sum_{i\\in r}P(Y_{ir}=1\\mid X_r)=1
+\\]
 
 The implementation uses numerically stable softmax and log-sum-exp calculations.
 
@@ -44,13 +53,25 @@ The implementation uses numerically stable softmax and log-sum-exp calculations.
 
 Let w(r) denote the actual winner of race r and R the number of training races.
 
-    ell(beta) = sum over races r [
-        u_w(r),r - log(sum(j in race r) exp(u_jr))
-    ]
+\\[
+\\ell(\\beta)=
+\\sum_{r=1}^{R}
+\\left[
+u_{w(r),r}
+-
+\\log\\left(\\sum_{j\\in r}\\exp(u_{jr})\\right)
+\\right]
+\\]
 
 The optimized objective is mean negative log-likelihood with L2 regularization:
 
-    L(beta) = -(1/R) ell(beta) + (lambda/2) ||beta||_2^2
+\\[
+\\mathcal{L}(\\beta)
+=
+-\\frac{1}{R}\\ell(\\beta)
++
+\\frac{\\lambda}{2}\\lVert\\beta\\rVert_2^2
+\\]
 
 Here lambda >= 0 is the fixed l2_strength argument. The initial experiment uses lambda = 1.0. It is not tuned against the validation folds.
 
@@ -58,7 +79,14 @@ Here lambda >= 0 is the fixed l2_strength argument. The initial experiment uses 
 
 Let p_r be the vector of predicted probabilities for race r, y_r the one-hot winner vector, and X_r the matrix of driver features for that race.
 
-    gradient L(beta) = (1/R) sum over races r [X_r^T (p_r - y_r)] + lambda beta
+\\[
+\\nabla_{\\beta}\\mathcal{L}
+=
+\\frac{1}{R}
+\\sum_{r=1}^{R}X_r^{\\top}(p_r-y_r)
++
+\\lambda\\beta
+\\]
 
 The objective and analytic gradient are optimized using L-BFGS-B.
 
@@ -92,11 +120,24 @@ Compared models:
 
 Primary metric: race-level Log Loss.
 
-    LogLoss = -(1/R) sum over races r log(p_hat_w(r),r)
+\\[
+\\operatorname{LogLoss}
+=
+-\\frac{1}{R}
+\\sum_{r=1}^{R}
+\\log\\widehat{P}_{w(r),r}
+\\]
 
 Secondary metrics:
 
-    Brier = (1/R) sum over races r sum over drivers i (p_hat_ir - y_ir)^2
+\\[
+\\operatorname{Brier}
+=
+\\frac{1}{R}
+\\sum_{r=1}^{R}
+\\sum_{i\\in r}
+(\\widehat{P}_{ir}-Y_{ir})^2
+\\]
 
 Winner accuracy is the fraction of races where the highest-probability driver is the actual winner. Ties receive fractional credit, consistent with the existing evaluator.
 
