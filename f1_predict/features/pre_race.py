@@ -82,7 +82,7 @@ def build_pre_race_features(
         lambda: {"finishes": [], "points": [], "dnfs": [], "starts": 0, "wins": 0}
     )
     constructor_history: dict[str, dict[str, object]] = defaultdict(
-        lambda: {"points": [], "dnfs": [], "starts": 0, "wins": 0}
+        lambda: {"points": [], "dnfs": [], "starts": 0, "entries": 0, "wins": 0}
     )
     circuit_history: dict[tuple[str, str], dict[str, object]] = defaultdict(
         lambda: {"finishes": [], "starts": 0}
