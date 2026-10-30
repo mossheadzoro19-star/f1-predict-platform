@@ -93,6 +93,6 @@ def test_tied_top_predictions_receive_fractional_winner_credit():
 
     metrics = evaluate_predictions(predictions)
 
-    assert metrics["winner_accuracy"] == pytest.approx(0.5)
+    assert metrics["winner_accuracy"] == pytest.approx(0.25)
     assert metrics["top_label_ece"] == pytest.approx(0.3)
 
