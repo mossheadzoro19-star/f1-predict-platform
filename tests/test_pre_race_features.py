@@ -1,4 +1,5 @@
-import pandas as pd\nimport pytest
+import pandas as pd
+import pytest
 
 from f1_predict.features.pre_race import build_pre_race_features
 
