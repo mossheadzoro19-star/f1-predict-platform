@@ -16,11 +16,14 @@ from xgboost import XGBClassifier
 
 
 FEATURE_COLUMNS = [
+    "field_size",
     "grid",
     "qualifying_position",
     "q1_seconds",
     "q2_seconds",
     "q3_seconds",
+    "qualifying_gap_to_pole_seconds",
+    "teammate_q3_gap_seconds",
     "driver_prior_starts",
     "driver_prior_wins",
     "driver_prior_win_rate",
@@ -28,12 +31,18 @@ FEATURE_COLUMNS = [
     "driver_finish_last_5",
     "driver_points_last_3",
     "driver_points_last_5",
+    "driver_weighted_form_5",
+    "driver_prior_dnf_rate",
     "constructor_prior_starts",
     "constructor_prior_wins",
     "constructor_prior_points",
+    "constructor_points_last_3",
+    "constructor_points_last_5",
     "constructor_prior_win_rate",
+    "constructor_prior_dnf_rate",
     "driver_circuit_prior_starts",
     "driver_circuit_finish_last_3",
+    "driver_circuit_finish_last_5",
 ]
 RACE_KEYS = ["season", "round"]
 ROW_KEYS = ["season", "round", "driver_id"]
