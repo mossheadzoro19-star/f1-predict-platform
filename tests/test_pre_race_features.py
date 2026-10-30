@@ -1,4 +1,4 @@
-import pandas as pd
+import pandas as pd\nimport pytest
 
 from f1_predict.features.pre_race import build_pre_race_features
 
@@ -20,19 +20,19 @@ def _inputs():
         [
             {
                 "season": 2020, "round": 1, "driver_id": "driver-a",
-                "constructor_id": "team-a", "grid": 1, "position": 1, "points": 25,
+                "constructor_id": "team-a", "grid": 1, "position": 1, "points": 25, "status": "Finished",
             },
             {
                 "season": 2020, "round": 1, "driver_id": "driver-b",
-                "constructor_id": "team-b", "grid": 2, "position": 2, "points": 18,
+                "constructor_id": "team-b", "grid": 2, "position": 2, "points": 18, "status": "Finished",
             },
             {
                 "season": 2020, "round": 2, "driver_id": "driver-a",
-                "constructor_id": "team-a", "grid": 2, "position": 2, "points": 18,
+                "constructor_id": "team-a", "grid": 2, "position": 2, "points": 18, "status": "Finished",
             },
             {
                 "season": 2020, "round": 2, "driver_id": "driver-b",
-                "constructor_id": "team-b", "grid": 1, "position": 1, "points": 25,
+                "constructor_id": "team-b", "grid": 1, "position": 1, "points": 25, "status": "Finished",
             },
         ]
     )
@@ -103,3 +103,37 @@ def test_duplicate_race_driver_results_are_rejected():
         assert "duplicate race/driver" in str(exc)
     else:
         raise AssertionError("Expected duplicate race-driver rows to be rejected")
+
+
+
+def test_enhanced_features_are_point_in_time_and_teammate_relative():
+    races, results, qualifying = _inputs()
+    results.loc[
+        (results["round"] == 1) & (results["driver_id"] == "driver-b"),
+        "status",
+    ] = "Retired"
+
+    features = build_pre_race_features(races, results, qualifying)
+    first = features[features["round"] == 1]
+    second = features[features["round"] == 2]
+
+    # No current-race outcomes may appear in the same race's prior-history features.
+    assert first["driver_prior_dnf_rate"].eq(0.0).all()
+    assert first["constructor_prior_dnf_rate"].eq(0.0).all()
+    assert first["constructor_points_last_3"].eq(0.0).all()
+
+    driver_a_first = first[first["driver_id"] == "driver-a"].iloc[0]
+    driver_b_first = first[first["driver_id"] == "driver-b"].iloc[0]
+    assert driver_a_first["field_size"] == 2
+    assert driver_a_first["qualifying_gap_to_pole_seconds"] == 0.0
+    assert driver_a_first["teammate_q3_gap_seconds"] is None
+    assert driver_b_first["qualifying_gap_to_pole_seconds"] == 1.0
+
+    driver_a_second = second[second["driver_id"] == "driver-a"].iloc[0]
+    driver_b_second = second[second["driver_id"] == "driver-b"].iloc[0]
+    assert driver_a_second["driver_prior_dnf_rate"] == 0.0
+    assert driver_b_second["driver_prior_dnf_rate"] == 1.0
+    assert driver_a_second["constructor_points_last_3"] == 25.0
+    assert driver_a_second["constructor_prior_dnf_rate"] == 0.0
+    assert driver_b_second["constructor_prior_dnf_rate"] == 1.0
+    assert driver_a_second["teammate_q3_gap_seconds"] == pytest.approx(-0.8)
