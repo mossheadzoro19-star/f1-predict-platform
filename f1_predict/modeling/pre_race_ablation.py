@@ -32,15 +32,18 @@ QUALIFYING_FEATURES = (
     "qualifying_gap_to_pole_seconds",
     "teammate_q3_gap_seconds",
 )
-CAREER_FEATURES = (
+EXPERIENCE_FEATURES = (
     "driver_prior_starts",
+    "constructor_prior_starts",
+)
+CAREER_DOMINANCE_FEATURES = (
     "driver_prior_wins",
     "driver_prior_win_rate",
-    "constructor_prior_starts",
     "constructor_prior_wins",
     "constructor_prior_points",
     "constructor_prior_win_rate",
 )
+CAREER_FEATURES = EXPERIENCE_FEATURES + CAREER_DOMINANCE_FEATURES
 RECENT_FEATURES = (
     "driver_finish_last_3",
     "driver_finish_last_5",
@@ -61,11 +64,13 @@ CIRCUIT_FEATURES = (
 FEATURE_SETS: dict[str, tuple[str, ...]] = {
     "full_baseline": tuple(FEATURE_COLUMNS),
     "no_career_dominance": tuple(
-        feature for feature in FEATURE_COLUMNS if feature not in CAREER_FEATURES
+        feature
+        for feature in FEATURE_COLUMNS
+        if feature not in CAREER_DOMINANCE_FEATURES
     ),
-    "recent_form_qualifying": QUALIFYING_FEATURES
-    + RECENT_FEATURES
-    + CIRCUIT_FEATURES,
+    "recent_form_qualifying": (
+        QUALIFYING_FEATURES + RECENT_FEATURES + CIRCUIT_FEATURES
+    ),
     "qualifying_only": QUALIFYING_FEATURES,
     "history_only": RECENT_FEATURES + CAREER_FEATURES + CIRCUIT_FEATURES,
 }
@@ -223,28 +228,6 @@ def run_ablation(
         ["feature_set", "model", "season", "round"]
     ).reset_index(drop=True)
     metrics_frame = pd.DataFrame(metric_rows)
-    combined_rows: list[dict[str, Any]] = []
-    for (feature_set, model_name), group in audit.groupby(
-        ["feature_set", "model"], sort=True
-    ):
-        # Reconstruct the complete OOF race-driver probabilities from audit is
-        # impossible; evaluate directly from the saved fold predictions below.
-        combined_rows.append(
-            {
-                "feature_set": feature_set,
-                "model": model_name,
-                "validation_races": int(
-                    group[["season", "round"]].drop_duplicates().shape[0]
-                ),
-                "winner_accuracy": float(
-                    (
-                        group["actual_winner_driver_id"]
-                        == group["predicted_winner_driver_id"]
-                    ).mean()
-                ),
-            }
-        )
-
     # Aggregate proper scoring rules from the per-race fold metrics, weighted
     # by race count. Every fold contains a disjoint set of validation races.
     summary_rows: list[dict[str, Any]] = []
