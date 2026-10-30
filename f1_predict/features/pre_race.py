@@ -31,20 +31,28 @@ def _mean(values: list[float], count: int) -> float | None:
     return sum(recent) / len(recent) if recent else None
 
 
+def _dnf(status: object) -> int:
+    """Return 1 when Jolpica status does not indicate a classified finish."""
+    if status is None or pd.isna(status):
+        return 0
+    text = str(status).strip().lower()
+    return int(text not in {"finished"} and not text.startswith("+"))
+
+
 def build_pre_race_features(
     races: pd.DataFrame,
     results: pd.DataFrame,
     qualifying: pd.DataFrame,
 ) -> pd.DataFrame:
-    """Build one driver-row per race using only information available pre-race.
+    """Build strictly point-in-time pre-race driver features.
 
-    Result position is used only to create the winner label and update history
-    after all feature rows for that race have been created.
+    Current-race finishing position, points and status are labels/history updates
+    only. All entrants' features are frozen before any current-race history update.
     """
     required_races = {"season", "round", "race_name", "circuit_id", "date"}
     required_results = {
         "season", "round", "driver_id", "constructor_id", "grid",
-        "position", "points",
+        "position", "points", "status",
     }
     required_qualifying = {"season", "round", "driver_id", "position", "q1", "q2", "q3"}
     for name, frame, required in (
@@ -66,22 +74,21 @@ def build_pre_race_features(
 
     race_rows = races.copy()
     race_rows["_date"] = pd.to_datetime(race_rows["date"], errors="coerce")
+    if race_rows["_date"].isna().any():
+        raise ValueError("Race calendar contains missing or invalid dates")
     race_rows = race_rows.sort_values(["_date", "season", "round"], kind="stable")
 
     driver_history: dict[str, dict[str, object]] = defaultdict(
-        lambda: {"finishes": [], "points": [], "starts": 0, "wins": 0}
+        lambda: {"finishes": [], "points": [], "dnfs": [], "starts": 0, "wins": 0}
     )
     constructor_history: dict[str, dict[str, object]] = defaultdict(
-        lambda: {"points": [], "starts": 0, "wins": 0}
+        lambda: {"points": [], "dnfs": [], "starts": 0, "wins": 0}
     )
     circuit_history: dict[tuple[str, str], dict[str, object]] = defaultdict(
         lambda: {"finishes": [], "starts": 0}
     )
 
-    results_by_race = {
-        key: group.copy()
-        for key, group in results.groupby(race_keys, sort=False)
-    }
+    results_by_race = {key: group.copy() for key, group in results.groupby(race_keys, sort=False)}
     qualifying_by_race = {
         key: group.set_index("driver_id", drop=False)
         for key, group in qualifying.groupby(race_keys, sort=False)
@@ -95,8 +102,19 @@ def build_pre_race_features(
             continue
         quali = qualifying_by_race.get(key)
         circuit_id = str(race["circuit_id"])
+        field_size = len(race_results)
 
-        # Build every row before updating any history from this race.
+        quali_rows: dict[str, dict[str, object]] = {}
+        for qrecord in ([] if quali is None else quali.to_dict("records")):
+            quali_rows[str(qrecord["driver_id"])] = qrecord
+        q3_times = {
+            driver: _seconds(record.get("q3"))
+            for driver, record in quali_rows.items()
+        }
+        valid_q3 = [value for value in q3_times.values() if value is not None]
+        best_q3 = min(valid_q3) if valid_q3 else None
+
+        # Freeze every driver's feature row before updating current-race history.
         race_output: list[dict[str, object]] = []
         for result in race_results.to_dict("records"):
             driver_id = str(result["driver_id"])
@@ -104,16 +122,24 @@ def build_pre_race_features(
             dh = driver_history[driver_id]
             ch = constructor_history[constructor_id]
             cih = circuit_history[(driver_id, circuit_id)]
+            qrow = quali_rows.get(driver_id)
+            q3 = None if qrow is None else _seconds(qrow.get("q3"))
 
-            qrow = None
-            if quali is not None and driver_id in quali.index:
-                qrow = quali.loc[driver_id]
-                if isinstance(qrow, pd.DataFrame):
-                    raise ValueError(f"Duplicate qualifying row for {key}, {driver_id}")
-
-            position = result.get("position")
-            numeric_position = float(position) if pd.notna(position) else None
-            q_position = None if qrow is None else qrow.get("position")
+            teammate_q3 = [
+                q3_times.get(str(other["driver_id"]))
+                for other in race_results.to_dict("records")
+                if str(other["constructor_id"]) == constructor_id
+                and str(other["driver_id"]) != driver_id
+                and q3_times.get(str(other["driver_id"])) is not None
+            ]
+            teammate_best = min(teammate_q3) if teammate_q3 else None
+            finish_history = dh["finishes"]
+            points_history = dh["points"]
+            constructor_points = ch["points"]
+            numeric_position = (
+                float(result["position"])
+                if pd.notna(result.get("position")) else None
+            )
             row = {
                 "season": key[0],
                 "round": key[1],
@@ -122,36 +148,59 @@ def build_pre_race_features(
                 "race_date": race.get("date"),
                 "driver_id": driver_id,
                 "constructor_id": constructor_id,
+                "field_size": field_size,
                 "grid": result.get("grid"),
-                "qualifying_position": q_position,
+                "qualifying_position": None if qrow is None else qrow.get("position"),
                 "q1_seconds": None if qrow is None else _seconds(qrow.get("q1")),
                 "q2_seconds": None if qrow is None else _seconds(qrow.get("q2")),
-                "q3_seconds": None if qrow is None else _seconds(qrow.get("q3")),
+                "q3_seconds": q3,
+                "qualifying_gap_to_pole_seconds": (
+                    None if q3 is None or best_q3 is None else q3 - best_q3
+                ),
+                "teammate_q3_gap_seconds": (
+                    None if q3 is None or teammate_best is None else q3 - teammate_best
+                ),
                 "driver_prior_starts": int(dh["starts"]),
                 "driver_prior_wins": int(dh["wins"]),
                 "driver_prior_win_rate": (
                     float(dh["wins"]) / int(dh["starts"]) if dh["starts"] else 0.0
                 ),
-                "driver_finish_last_3": _mean(dh["finishes"], 3),
-                "driver_finish_last_5": _mean(dh["finishes"], 5),
-                "driver_points_last_3": sum(dh["points"][-3:]),
-                "driver_points_last_5": sum(dh["points"][-5:]),
+                "driver_finish_last_3": _mean(finish_history, 3),
+                "driver_finish_last_5": _mean(finish_history, 5),
+                "driver_points_last_3": sum(points_history[-3:]),
+                "driver_points_last_5": sum(points_history[-5:]),
+                "driver_weighted_form_5": (
+                    float(sum(value * weight for value, weight in zip(
+                        finish_history[-5:], range(1, min(len(finish_history), 5) + 1)
+                    )) / sum(range(1, min(len(finish_history), 5) + 1)))
+                    if finish_history else None
+                ),
+                "driver_prior_dnf_rate": (
+                    float(sum(dh["dnfs"])) / int(dh["starts"]) if dh["starts"] else 0.0
+                ),
                 "constructor_prior_starts": int(ch["starts"]),
                 "constructor_prior_wins": int(ch["wins"]),
-                "constructor_prior_points": sum(ch["points"]),
+                "constructor_prior_points": sum(constructor_points),
+                "constructor_points_last_3": sum(constructor_points[-3:]),
+                "constructor_points_last_5": sum(constructor_points[-5:]),
                 "constructor_prior_win_rate": (
                     float(ch["wins"]) / int(ch["starts"]) if ch["starts"] else 0.0
                 ),
+                "constructor_prior_dnf_rate": (
+                    float(sum(ch["dnfs"])) / (2 * int(ch["starts"]))
+                    if ch["starts"] else 0.0
+                ),
                 "driver_circuit_prior_starts": int(cih["starts"]),
                 "driver_circuit_finish_last_3": _mean(cih["finishes"], 3),
+                "driver_circuit_finish_last_5": _mean(cih["finishes"], 5),
                 "winner": int(numeric_position == 1.0) if numeric_position is not None else 0,
             }
             race_output.append(row)
         output.extend(race_output)
 
-        # Update state only after all entrants' pre-race features are frozen.
         constructor_race_points: dict[str, float] = defaultdict(float)
         constructor_race_wins: dict[str, int] = defaultdict(int)
+        constructor_race_dnfs: dict[str, int] = defaultdict(int)
         for result in race_results.to_dict("records"):
             driver_id = str(result["driver_id"])
             constructor_id = str(result["constructor_id"])
@@ -159,10 +208,12 @@ def build_pre_race_features(
             points = result.get("points")
             numeric_position = float(position) if pd.notna(position) else None
             numeric_points = float(points) if pd.notna(points) else 0.0
+            dnf = _dnf(result.get("status"))
 
             dh = driver_history[driver_id]
             dh["starts"] += 1
             dh["points"].append(numeric_points)
+            dh["dnfs"].append(dnf)
             if numeric_position is not None:
                 dh["finishes"].append(numeric_position)
             if numeric_position == 1.0:
@@ -174,6 +225,7 @@ def build_pre_race_features(
                 cih["finishes"].append(numeric_position)
 
             constructor_race_points[constructor_id] += numeric_points
+            constructor_race_dnfs[constructor_id] += dnf
             if numeric_position == 1.0:
                 constructor_race_wins[constructor_id] += 1
 
@@ -181,6 +233,7 @@ def build_pre_race_features(
             ch = constructor_history[constructor_id]
             ch["starts"] += 1
             ch["points"].append(race_points)
+            ch["dnfs"].append(constructor_race_dnfs[constructor_id])
             ch["wins"] += constructor_race_wins[constructor_id]
 
     frame = pd.DataFrame(output)
