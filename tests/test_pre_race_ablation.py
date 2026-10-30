@@ -46,10 +46,12 @@ def test_feature_sets_are_valid_subsets_of_baseline():
     assert set(ablation.FEATURE_SETS["qualifying_only"]) == set(
         ablation.QUALIFYING_FEATURES
     )
-    assert not (
-        set(ablation.FEATURE_SETS["recent_form_qualifying"])
-        & set(ablation.CAREER_FEATURES)
-    )
+    no_dominance = set(ablation.FEATURE_SETS["no_career_dominance"])
+    recent_qualifying = set(ablation.FEATURE_SETS["recent_form_qualifying"])
+    assert set(ablation.EXPERIENCE_FEATURES).issubset(no_dominance)
+    assert not (set(ablation.CAREER_DOMINANCE_FEATURES) & no_dominance)
+    assert not (set(ablation.CAREER_FEATURES) & recent_qualifying)
+    assert no_dominance != recent_qualifying
 
 
 def test_ablation_runs_identical_chronological_folds(monkeypatch):
