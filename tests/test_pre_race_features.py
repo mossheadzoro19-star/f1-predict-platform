@@ -222,3 +222,73 @@ def test_constructor_lineage_features_inherit_only_prior_alias_history():
 def test_red_bull_racing_is_not_merged_with_rb_sister_team():
     assert _constructor_lineage_id("rb") == "rb_sister_team_lineage"
     assert _constructor_lineage_id("red_bull") == "red_bull"
+
+
+def test_lineage_prior_starts_counts_only_races_where_lineage_appeared():
+    races, results, qualifying = _inputs()
+
+    # Add a third race. Team A does not enter Round 2, then returns in Round 3.
+    races = pd.concat(
+        [
+            races,
+            pd.DataFrame([{
+                "season": 2020, "round": 3, "race_name": "Race C",
+                "circuit_id": "track-b", "date": "2020-03-15",
+            }]),
+        ],
+        ignore_index=True,
+    )
+    results = pd.concat(
+        [
+            results,
+            pd.DataFrame([
+                {
+                    "season": 2020, "round": 3, "driver_id": "driver-a",
+                    "constructor_id": "team-a", "grid": 1, "position": 1,
+                    "points": 25, "status": "Finished",
+                },
+                {
+                    "season": 2020, "round": 3, "driver_id": "driver-b",
+                    "constructor_id": "team-b", "grid": 2, "position": 2,
+                    "points": 18, "status": "Finished",
+                },
+            ]),
+        ],
+        ignore_index=True,
+    )
+    results = results[
+        ~((results["season"] == 2020) & (results["round"] == 2)
+          & (results["constructor_id"] == "team-a"))
+    ].copy()
+    qualifying = pd.concat(
+        [
+            qualifying,
+            pd.DataFrame([
+                {
+                    "season": 2020, "round": 3, "driver_id": "driver-a",
+                    "position": 1, "q1": "1:20.000", "q2": "1:19.500",
+                    "q3": "1:19.000",
+                },
+                {
+                    "season": 2020, "round": 3, "driver_id": "driver-b",
+                    "position": 2, "q1": "1:21.000", "q2": "1:20.500",
+                    "q3": "1:20.000",
+                },
+            ]),
+        ],
+        ignore_index=True,
+    )
+    qualifying = qualifying[
+        ~((qualifying["season"] == 2020) & (qualifying["round"] == 2)
+          & (qualifying["driver_id"] == "driver-a"))
+    ].copy()
+
+    features = build_pre_race_features(races, results, qualifying)
+    returning_team = features[
+        (features["round"] == 3) & (features["constructor_id"] == "team-a")
+    ].iloc[0]
+
+    # Team A's lineage appeared in Round 1, not Round 2.
+    assert returning_team["lineage_prior_starts"] == 1
+    assert returning_team["lineage_prior_points"] == 25.0
+
