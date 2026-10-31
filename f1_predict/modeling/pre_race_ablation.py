@@ -65,6 +65,19 @@ RELATIVE_CONSTRUCTOR_FEATURES = (
     "constructor_points_share_last_5",
     "constructor_points_share_trend_3v3",
 )
+RECENT_LINEAGE_FEATURES = (
+    "lineage_points_last_3",
+    "lineage_points_last_5",
+    "lineage_points_share_last_3",
+    "lineage_points_share_last_5",
+)
+FULL_LINEAGE_FEATURES = (
+    "lineage_prior_starts",
+    "lineage_prior_wins",
+    "lineage_prior_points",
+    "lineage_prior_win_rate",
+)
+ALL_LINEAGE_FEATURES = RECENT_LINEAGE_FEATURES + FULL_LINEAGE_FEATURES
 
 FEATURE_SETS: dict[str, tuple[str, ...]] = {
     "full_baseline": tuple(FEATURE_COLUMNS),
@@ -88,6 +101,15 @@ FEATURE_SETS: dict[str, tuple[str, ...]] = {
             if feature not in CAREER_DOMINANCE_FEATURES
         )
         + RELATIVE_CONSTRUCTOR_FEATURES
+    ),
+    "baseline_plus_recent_lineage": (
+        tuple(FEATURE_COLUMNS) + RECENT_LINEAGE_FEATURES
+    ),
+    "baseline_plus_full_lineage": (
+        tuple(FEATURE_COLUMNS) + FULL_LINEAGE_FEATURES
+    ),
+    "baseline_plus_all_lineage": (
+        tuple(FEATURE_COLUMNS) + ALL_LINEAGE_FEATURES
     ),
 }
 
