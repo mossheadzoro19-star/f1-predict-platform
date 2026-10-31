@@ -20,6 +20,12 @@ def _ablation_frame(seasons=(2020, 2021, 2022)):
                 row.update(
                     {feature: float(driver_number + 1) for feature in FEATURE_COLUMNS}
                 )
+                row.update(
+                    {
+                        feature: float(driver_number + 1)
+                        for feature in ablation.RELATIVE_CONSTRUCTOR_FEATURES
+                    }
+                )
                 rows.append(row)
     return pd.DataFrame(rows)
 
@@ -38,11 +44,25 @@ def test_ablation_requires_validation_seasons():
         ablation.validate_ablation_frame(frame, validation_years=(2021, 2022))
 
 
-def test_feature_sets_are_valid_subsets_of_baseline():
+def test_feature_sets_are_valid_and_relative_features_are_isolated():
     baseline = set(FEATURE_COLUMNS)
+    relative = set(ablation.RELATIVE_CONSTRUCTOR_FEATURES)
 
     assert set(ablation.FEATURE_SETS["full_baseline"]) == baseline
-    assert all(set(columns).issubset(baseline) for columns in ablation.FEATURE_SETS.values())
+    assert all(
+        set(columns).issubset(baseline | relative)
+        for columns in ablation.FEATURE_SETS.values()
+    )
+    assert set(ablation.FEATURE_SETS["baseline_plus_relative_constructor"]) == (
+        baseline | relative
+    )
+    no_dominance_plus_relative = set(
+        ablation.FEATURE_SETS["no_career_dominance_plus_relative_constructor"]
+    )
+    assert relative.issubset(no_dominance_plus_relative)
+    assert not (
+        set(ablation.CAREER_DOMINANCE_FEATURES) & no_dominance_plus_relative
+    )
     assert set(ablation.FEATURE_SETS["qualifying_only"]) == set(
         ablation.QUALIFYING_FEATURES
     )
