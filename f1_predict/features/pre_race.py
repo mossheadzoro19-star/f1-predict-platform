@@ -176,6 +176,7 @@ def build_pre_race_features(
                 "race_date": race.get("date"),
                 "driver_id": driver_id,
                 "constructor_id": constructor_id,
+                "constructor_lineage_id": lineage_id,
                 "field_size": field_size,
                 "grid": result.get("grid"),
                 "qualifying_position": None if qrow is None else qrow.get("position"),
