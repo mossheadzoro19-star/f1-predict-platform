@@ -186,16 +186,20 @@ def test_constructor_lineage_features_inherit_only_prior_alias_history():
     races.loc[1, "season"] = 2021
     races.loc[1, "round"] = 1
     races.loc[1, "date"] = "2021-03-08"
-    results.loc[results["round"] == 1, "constructor_id"] = results.loc[
-        results["round"] == 1, "driver_id"
-    ].map({"driver-a": "toro_rosso", "driver-b": "ferrari"})
-    results.loc[results["round"] == 2, "season"] = 2021
-    results.loc[results["round"] == 2, "round"] = 1
-    results.loc[results["round"] == 1, "constructor_id"] = results.loc[
-        results["round"] == 1, "driver_id"
-    ].map({"driver-a": "alphatauri", "driver-b": "ferrari"})
-    qualifying.loc[qualifying["round"] == 2, "season"] = 2021
-    qualifying.loc[qualifying["round"] == 2, "round"] = 1
+
+    results.loc[0, "constructor_id"] = "toro_rosso"
+    results.loc[1, "constructor_id"] = "ferrari"
+    results.loc[2, "season"] = 2021
+    results.loc[2, "round"] = 1
+    results.loc[2, "constructor_id"] = "alphatauri"
+    results.loc[3, "season"] = 2021
+    results.loc[3, "round"] = 1
+    results.loc[3, "constructor_id"] = "ferrari"
+
+    qualifying.loc[2, "season"] = 2021
+    qualifying.loc[2, "round"] = 1
+    qualifying.loc[3, "season"] = 2021
+    qualifying.loc[3, "round"] = 1
 
     features = build_pre_race_features(races, results, qualifying)
     current = features[
