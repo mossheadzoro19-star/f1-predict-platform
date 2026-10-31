@@ -33,6 +33,21 @@ Constructor points share is calculated per completed race as a constructor's tot
 
 These are experimental features. They are deliberately not added to the existing baseline model feature list until a controlled walk-forward experiment demonstrates improvement.
 
+### Experimental constructor lineage
+
+The feature builder also calculates a separate lineage history without changing the source-ID constructor features. The reviewed experimental mapping is:
+
+| Source constructor IDs | Experimental lineage ID |
+|---|---|
+| `force_india`, `racing_point`, `aston_martin` | `aston_martin_lineage` |
+| `renault`, `alpine` | `alpine_lineage` |
+| `toro_rosso`, `alphatauri`, `rb` | `rb_sister_team_lineage` |
+| `alfa`, `sauber` | `sauber_lineage` |
+
+Unmapped IDs retain their own identity. Red Bull Racing (`red_bull`) is explicitly separate from the AlphaTauri/RB sister-team lineage. This mapping represents an organizational continuity hypothesis, not a claim that car performance transfers unchanged across rebrands or regulation eras.
+
+Experimental columns are `lineage_prior_starts`, `lineage_prior_wins`, `lineage_prior_points`, `lineage_prior_win_rate`, `lineage_points_last_3`, `lineage_points_last_5`, `lineage_points_share_last_3`, and `lineage_points_share_last_5`. They aggregate only completed races earlier than the prediction race. Source-ID constructor columns remain unchanged. These lineage columns are not part of the baseline model feature list; they are used only by explicit lineage ablation feature sets.
+
 ### Circuit experience
 - Driver starts at the circuit.
 - Mean finishing position over the driver's previous three and five starts at that circuit.
@@ -51,7 +66,7 @@ These are experimental features. They are deliberately not added to the existing
 - A positive teammate Q3 gap means the driver was slower than the teammate; a negative gap means faster.
 - A positive gap-to-pole means slower than the session's fastest Q3 time.
 - Jolpica status values such as `Finished` and `+1 Lap` are treated as classified finishes. Other status strings are counted as non-finishes for the DNF-rate feature. This is a coarse historical reliability signal, not a mechanical-failure label.
-- Historical results are season-context sensitive: constructor identifiers change when team identity changes. No attempt is made to merge predecessor/successor teams.
+- Source-ID constructor history remains isolated by exact Jolpica constructor ID. A separate, experimental lineage mapping is documented above; it must not be interpreted as a production identity or performance-equivalence guarantee.
 - Weather, tyre degradation, pit-stop execution, safety-car exposure, and telemetry-derived pace are intentionally not included in this pre-race feature set yet. They require separate source-quality and availability checks and may be introduced in later phases.
 
 ## Rebuild
