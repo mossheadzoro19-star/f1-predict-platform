@@ -60,6 +60,11 @@ CIRCUIT_FEATURES = (
     "driver_circuit_finish_last_3",
     "driver_circuit_finish_last_5",
 )
+RELATIVE_CONSTRUCTOR_FEATURES = (
+    "constructor_points_share_last_3",
+    "constructor_points_share_last_5",
+    "constructor_points_share_trend_3v3",
+)
 
 FEATURE_SETS: dict[str, tuple[str, ...]] = {
     "full_baseline": tuple(FEATURE_COLUMNS),
@@ -73,6 +78,17 @@ FEATURE_SETS: dict[str, tuple[str, ...]] = {
     ),
     "qualifying_only": QUALIFYING_FEATURES,
     "history_only": RECENT_FEATURES + CAREER_FEATURES + CIRCUIT_FEATURES,
+    "baseline_plus_relative_constructor": (
+        tuple(FEATURE_COLUMNS) + RELATIVE_CONSTRUCTOR_FEATURES
+    ),
+    "no_career_dominance_plus_relative_constructor": (
+        tuple(
+            feature
+            for feature in FEATURE_COLUMNS
+            if feature not in CAREER_DOMINANCE_FEATURES
+        )
+        + RELATIVE_CONSTRUCTOR_FEATURES
+    ),
 }
 
 
