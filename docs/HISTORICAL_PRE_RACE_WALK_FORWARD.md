@@ -38,12 +38,14 @@ Optional paths:
 python -m f1_predict.modeling.pre_race_walk_forward \
   --data data/processed/features/pre_race_driver_features.parquet \
   --report-output reports/pre_race_walk_forward/metrics.json \
-  --predictions-output reports/pre_race_walk_forward/race_predictions.csv
+  --predictions-output reports/pre_race_walk_forward/race_predictions.csv \
+  --driver-probabilities-output reports/pre_race_walk_forward/driver_probabilities.csv
 ```
 
 Outputs:
 - `reports/pre_race_walk_forward/metrics.json`: fold-level and combined out-of-fold metrics, training seasons and race counts.
 - `reports/pre_race_walk_forward/race_predictions.csv`: one row per race and model, including the actual winner's predicted probability/rank and the predicted winner.
+- `reports/pre_race_walk_forward/driver_probabilities.csv`: one row per driver, race and model, with the out-of-fold winning probability, actual-winner flag, rank and training cutoff. Probabilities sum to one within each race/model. This file is the input for the separate calibration experiment.
 
 This command does not save or replace the baseline model artifact. It is an evaluation workflow, not a production-model training command.
 
