@@ -46,7 +46,7 @@ The feature builder also calculates a separate lineage history without changing 
 
 Unmapped IDs retain their own identity. Red Bull Racing (`red_bull`) is explicitly separate from the AlphaTauri/RB sister-team lineage. This mapping represents an organizational continuity hypothesis, not a claim that car performance transfers unchanged across rebrands or regulation eras.
 
-Experimental columns are `lineage_prior_starts`, `lineage_prior_wins`, `lineage_prior_points`, `lineage_prior_win_rate`, `lineage_points_last_3`, `lineage_points_last_5`, `lineage_points_share_last_3`, and `lineage_points_share_last_5`. They aggregate only completed races earlier than the prediction race. Source-ID constructor columns remain unchanged. These lineage columns are not part of the baseline model feature list; they are used only by explicit lineage ablation feature sets.
+Experimental columns are `lineage_prior_starts`, `lineage_prior_wins`, `lineage_prior_points`, `lineage_prior_win_rate`, `lineage_points_last_3`, `lineage_points_last_5`, `lineage_points_share_last_3`, and `lineage_points_share_last_5`. `lineage_prior_starts` counts completed race appearances for that lineage (one increment per race in which at least one mapped constructor entered), not driver entries and not every race on the calendar. Lineage wins and points are aggregated across all constructors mapped to that lineage within a completed race. These values are available only to later prediction races. Source-ID constructor columns remain unchanged. These lineage columns are not part of the baseline model feature list; they are used only by explicit lineage ablation feature sets.
 
 ### Circuit experience
 - Driver starts at the circuit.
