@@ -84,10 +84,48 @@ def _prediction_audit(
     return pd.DataFrame(rows)
 
 
+def _driver_probability_audit(
+    predictions: pd.DataFrame,
+    model_name: str,
+    train_end_year: int,
+) -> pd.DataFrame:
+    """Return every driver's out-of-fold race-winning probability."""
+    rows: list[pd.DataFrame] = []
+    for (season, round_number), race in predictions.groupby(RACE_KEYS, sort=True):
+        if int(race["winner"].sum()) != 1:
+            raise ValueError(
+                f"Season {season}, round {round_number} must have exactly one winner"
+            )
+        ordered = race.sort_values(
+            ["win_probability", "driver_id"],
+            ascending=[False, True],
+            kind="stable",
+        ).copy()
+        ordered["probability_rank"] = ordered["win_probability"].rank(
+            method="min", ascending=False
+        ).astype(int)
+        ordered["season"] = int(season)
+        ordered["round"] = int(round_number)
+        ordered["model"] = model_name
+        ordered["train_end_year"] = int(train_end_year)
+        ordered = ordered.rename(columns={
+            "driver_id": "driver_id",
+            "winner": "actual_winner",
+            "win_probability": "predicted_win_probability",
+        })
+        rows.append(ordered[
+            [
+                "season", "round", "model", "train_end_year", "driver_id",
+                "actual_winner", "predicted_win_probability", "probability_rank",
+            ]
+        ])
+    return pd.concat(rows, ignore_index=True) if rows else pd.DataFrame()
+
+
 def run_walk_forward(
     frame: pd.DataFrame,
     validation_years: tuple[int, ...] = DEFAULT_VALIDATION_YEARS,
-) -> tuple[dict[str, Any], pd.DataFrame]:
+) -> tuple[dict[str, Any], pd.DataFrame, pd.DataFrame]:
     """Evaluate each future season using only seasons strictly before it."""
     validate_walk_forward_frame(frame, validation_years)
 
@@ -98,6 +136,7 @@ def run_walk_forward(
     }
     fold_reports: list[dict[str, Any]] = []
     audit_frames: list[pd.DataFrame] = []
+    probability_frames: list[pd.DataFrame] = []
 
     for validation_year in validation_years:
         train_end_year = validation_year - 1
@@ -134,6 +173,9 @@ def run_walk_forward(
             model_predictions[name].append(prediction)
             audit_frames.append(
                 _prediction_audit(prediction, name, train_end_year)
+            )
+            probability_frames.append(
+                _driver_probability_audit(prediction, name, train_end_year)
             )
 
         fold_reports.append(
@@ -174,7 +216,10 @@ def run_walk_forward(
     audit = pd.concat(audit_frames, ignore_index=True).sort_values(
         ["season", "round", "model"]
     ).reset_index(drop=True)
-    return report, audit
+    probabilities = pd.concat(probability_frames, ignore_index=True).sort_values(
+        ["season", "round", "model", "probability_rank", "driver_id"]
+    ).reset_index(drop=True)
+    return report, audit, probabilities
 
 
 def main() -> None:
@@ -199,19 +244,26 @@ def main() -> None:
         type=Path,
         default=Path("reports/pre_race_walk_forward/race_predictions.csv"),
     )
+    parser.add_argument(
+        "--driver-probabilities-output",
+        type=Path,
+        default=Path("reports/pre_race_walk_forward/driver_probabilities.csv"),
+    )
     args = parser.parse_args()
 
     # The feature file is expected to contain 2018–2024 only. The validation
     # guard rejects any accidental inclusion of 2025 or later.
     frame = pd.read_parquet(args.data)
-    report, audit = run_walk_forward(frame)
+    report, audit, probabilities = run_walk_forward(frame)
 
     args.report_output.parent.mkdir(parents=True, exist_ok=True)
     args.predictions_output.parent.mkdir(parents=True, exist_ok=True)
+    args.driver_probabilities_output.parent.mkdir(parents=True, exist_ok=True)
     args.report_output.write_text(
         json.dumps(report, indent=2), encoding="utf-8"
     )
     audit.to_csv(args.predictions_output, index=False)
+    probabilities.to_csv(args.driver_probabilities_output, index=False)
 
     print("PRE-RACE WALK-FORWARD VALIDATION")
     print(f"Validation seasons: {report['validation_years']}")
@@ -243,6 +295,7 @@ def main() -> None:
             )
     print(f"\nMetrics report: {args.report_output}")
     print(f"Race predictions: {args.predictions_output}")
+    print(f"All-driver probabilities: {args.driver_probabilities_output}")
     print("2025 was not loaded or evaluated.")
 
 
