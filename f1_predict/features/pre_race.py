@@ -82,7 +82,7 @@ def build_pre_race_features(
         lambda: {"finishes": [], "points": [], "dnfs": [], "starts": 0, "wins": 0}
     )
     constructor_history: dict[str, dict[str, object]] = defaultdict(
-        lambda: {"points": [], "dnfs": [], "starts": 0, "entries": 0, "wins": 0}
+        lambda: {"points": [], "points_share": [], "dnfs": [], "starts": 0, "entries": 0, "wins": 0}
     )
     circuit_history: dict[tuple[str, str], dict[str, object]] = defaultdict(
         lambda: {"finishes": [], "starts": 0}
@@ -183,6 +183,13 @@ def build_pre_race_features(
                 "constructor_prior_points": sum(constructor_points),
                 "constructor_points_last_3": sum(constructor_points[-3:]),
                 "constructor_points_last_5": sum(constructor_points[-5:]),
+                "constructor_points_share_last_3": _mean(ch["points_share"], 3),
+                "constructor_points_share_last_5": _mean(ch["points_share"], 5),
+                "constructor_points_share_trend_3v3": (
+                    _mean(ch["points_share"][-6:-3], 3)
+                    if len(ch["points_share"]) >= 6
+                    else None
+                ),
                 "constructor_prior_win_rate": (
                     float(ch["wins"]) / int(ch["starts"]) if ch["starts"] else 0.0
                 ),
@@ -233,8 +240,14 @@ def build_pre_race_features(
         for result in race_results.to_dict("records"):
             constructor_race_entries[str(result["constructor_id"])] += 1
 
+        total_constructor_points = sum(constructor_race_points.values())
         for constructor_id, race_points in constructor_race_points.items():
             ch = constructor_history[constructor_id]
+            ch["points_share"].append(
+                race_points / total_constructor_points
+                if total_constructor_points > 0
+                else float("nan")
+            )
             ch["starts"] += 1
             ch["entries"] += constructor_race_entries[constructor_id]
             ch["points"].append(race_points)
