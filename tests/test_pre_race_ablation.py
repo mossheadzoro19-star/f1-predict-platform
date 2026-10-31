@@ -53,10 +53,11 @@ def test_ablation_requires_validation_seasons():
 def test_feature_sets_are_valid_and_relative_features_are_isolated():
     baseline = set(FEATURE_COLUMNS)
     relative = set(ablation.RELATIVE_CONSTRUCTOR_FEATURES)
+    lineage = set(ablation.ALL_LINEAGE_FEATURES)
 
     assert set(ablation.FEATURE_SETS["full_baseline"]) == baseline
     assert all(
-        set(columns).issubset(baseline | relative)
+        set(columns).issubset(baseline | relative | lineage)
         for columns in ablation.FEATURE_SETS.values()
     )
     assert set(ablation.FEATURE_SETS["baseline_plus_relative_constructor"]) == (
