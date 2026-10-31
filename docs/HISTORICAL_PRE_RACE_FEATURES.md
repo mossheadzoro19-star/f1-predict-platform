@@ -16,6 +16,8 @@ This feature set supports a prediction made after qualifying and before the Gran
 ### Constructor strength and reliability
 - Prior constructor race starts, wins, cumulative points, and win rate.
 - Points scored over the previous three and five constructor races.
+- Constructor share of all points awarded across the field over the previous three and five races.
+- Constructor points-share trend: mean share over the latest three races minus mean share over the preceding three races; unavailable until six prior races exist.
 - Prior constructor DNF rate, using prior driver entries as the denominator.
 
 ### Qualifying and grid
@@ -24,6 +26,12 @@ This feature set supports a prediction made after qualifying and before the Gran
 - Q3 gap to the fastest recorded Q3 time in that qualifying session.
 - Q3 gap to the best recorded Q3 time by the driver's teammate.
 - Field size.
+
+### Relative constructor competitiveness
+
+Constructor points share is calculated per completed race as a constructor's total race points divided by the total points scored by all constructors in that race. Rolling means use only completed prior races. The 3-vs-3 trend is positive when the constructor's share has increased and negative when it has decreased. If a race awards zero points across the entire field, its share is undefined and remains missing rather than being fabricated.
+
+These are experimental features. They are deliberately not added to the existing baseline model feature list until a controlled walk-forward experiment demonstrates improvement.
 
 ### Circuit experience
 - Driver starts at the circuit.
