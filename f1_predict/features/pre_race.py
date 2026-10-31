@@ -186,7 +186,8 @@ def build_pre_race_features(
                 "constructor_points_share_last_3": _mean(ch["points_share"], 3),
                 "constructor_points_share_last_5": _mean(ch["points_share"], 5),
                 "constructor_points_share_trend_3v3": (
-                    _mean(ch["points_share"][-6:-3], 3)
+                    _mean(ch["points_share"], 3)
+                    - _mean(ch["points_share"][-6:-3], 3)
                     if len(ch["points_share"]) >= 6
                     else None
                 ),
