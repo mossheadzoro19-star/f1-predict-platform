@@ -10,6 +10,26 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_START_YEAR = 2018
 DEFAULT_END_YEAR = 2024
 
+# Reviewed organizational lineages for experimental historical features.
+# Unmapped constructor IDs retain their own identity. Red Bull Racing remains
+# separate from the AlphaTauri/RB sister-team lineage.
+CONSTRUCTOR_LINEAGE_IDS = {
+    "force_india": "aston_martin_lineage",
+    "racing_point": "aston_martin_lineage",
+    "aston_martin": "aston_martin_lineage",
+    "renault": "alpine_lineage",
+    "alpine": "alpine_lineage",
+    "toro_rosso": "rb_sister_team_lineage",
+    "alphatauri": "rb_sister_team_lineage",
+    "rb": "rb_sister_team_lineage",
+    "alfa": "sauber_lineage",
+    "sauber": "sauber_lineage",
+}
+
+
+def _constructor_lineage_id(constructor_id: str) -> str:
+    return CONSTRUCTOR_LINEAGE_IDS.get(constructor_id, constructor_id)
+
 
 def _seconds(value: object) -> float | None:
     """Convert a qualifying time such as '1:23.456' to seconds."""
@@ -84,6 +104,12 @@ def build_pre_race_features(
     constructor_history: dict[str, dict[str, object]] = defaultdict(
         lambda: {"points": [], "points_share": [], "dnfs": [], "starts": 0, "entries": 0, "wins": 0}
     )
+    lineage_history: dict[str, dict[str, object]] = defaultdict(
+        lambda: {
+            "points": [], "points_share": [], "starts": 0,
+            "entries": 0, "wins": 0,
+        }
+    )
     circuit_history: dict[tuple[str, str], dict[str, object]] = defaultdict(
         lambda: {"finishes": [], "starts": 0}
     )
@@ -121,6 +147,8 @@ def build_pre_race_features(
             constructor_id = str(result["constructor_id"])
             dh = driver_history[driver_id]
             ch = constructor_history[constructor_id]
+            lineage_id = _constructor_lineage_id(constructor_id)
+            lh = lineage_history[lineage_id]
             cih = circuit_history[(driver_id, circuit_id)]
             qrow = quali_rows.get(driver_id)
             q3 = None if qrow is None else _seconds(qrow.get("q3"))
@@ -198,6 +226,18 @@ def build_pre_race_features(
                     float(sum(ch["dnfs"])) / int(ch["entries"])
                     if ch["entries"] else 0.0
                 ),
+                # Experimental lineage features; baseline source-ID features above
+                # remain unchanged and continue to use exact Jolpica IDs.
+                "lineage_prior_starts": int(lh["starts"]),
+                "lineage_prior_wins": int(lh["wins"]),
+                "lineage_prior_points": sum(lh["points"]),
+                "lineage_prior_win_rate": (
+                    float(lh["wins"]) / int(lh["starts"]) if lh["starts"] else 0.0
+                ),
+                "lineage_points_last_3": sum(lh["points"][-3:]),
+                "lineage_points_last_5": sum(lh["points"][-5:]),
+                "lineage_points_share_last_3": _mean(lh["points_share"], 3),
+                "lineage_points_share_last_5": _mean(lh["points_share"], 5),
                 "driver_circuit_prior_starts": int(cih["starts"]),
                 "driver_circuit_finish_last_3": _mean(cih["finishes"], 3),
                 "driver_circuit_finish_last_5": _mean(cih["finishes"], 5),
@@ -242,6 +282,15 @@ def build_pre_race_features(
             constructor_race_entries[str(result["constructor_id"])] += 1
 
         total_constructor_points = sum(constructor_race_points.values())
+        lineage_race_points: dict[str, float] = defaultdict(float)
+        lineage_race_wins: dict[str, int] = defaultdict(int)
+        lineage_race_entries: dict[str, int] = defaultdict(int)
+        for constructor_id, race_points in constructor_race_points.items():
+            lineage_id = _constructor_lineage_id(constructor_id)
+            lineage_race_points[lineage_id] += race_points
+            lineage_race_wins[lineage_id] += constructor_race_wins[constructor_id]
+            lineage_race_entries[lineage_id] += constructor_race_entries[constructor_id]
+
         for constructor_id, race_points in constructor_race_points.items():
             ch = constructor_history[constructor_id]
             ch["points_share"].append(
@@ -254,6 +303,18 @@ def build_pre_race_features(
             ch["points"].append(race_points)
             ch["dnfs"].append(constructor_race_dnfs[constructor_id])
             ch["wins"] += constructor_race_wins[constructor_id]
+
+        for lineage_id, race_points in lineage_race_points.items():
+            lh = lineage_history[lineage_id]
+            lh["points"].append(race_points)
+            lh["points_share"].append(
+                race_points / total_constructor_points
+                if total_constructor_points > 0
+                else float("nan")
+            )
+            lh["starts"] += 1
+            lh["entries"] += lineage_race_entries[lineage_id]
+            lh["wins"] += lineage_race_wins[lineage_id]
 
     frame = pd.DataFrame(output)
     if frame.empty:
