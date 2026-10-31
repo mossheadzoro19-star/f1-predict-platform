@@ -8,11 +8,11 @@ from f1_predict.modeling.pre_race_model import FEATURE_COLUMNS
 
 class _FixedProbabilityModel:
     def predict_proba(self, features):
-        probabilities = np.tile(
-            np.array([[0.25, 0.75]], dtype=float),
-            (len(features), 1),
-        )
-        return probabilities
+        # Use the first synthetic feature to create distinct driver scores.
+        # A constant model would tie every driver, correctly giving all of
+        # them rank 1 under the production rank(method="min") semantics.
+        positive = features.iloc[:, 0].to_numpy(dtype=float) / 3.0
+        return np.column_stack([1.0 - positive, positive])
 
 
 def _walk_forward_frame(seasons=(2020, 2021, 2022)):
