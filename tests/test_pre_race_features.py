@@ -1,7 +1,10 @@
 import pandas as pd
 import pytest
 
-from f1_predict.features.pre_race import build_pre_race_features
+from f1_predict.features.pre_race import (
+    _constructor_lineage_id,
+    build_pre_race_features,
+)
 
 
 def _inputs():
@@ -176,3 +179,40 @@ def test_constructor_relative_points_share_is_point_in_time():
     assert team_b["constructor_points_share_last_3"] == pytest.approx(18 / 43)
     assert team_a["constructor_points_share_last_5"] == pytest.approx(25 / 43)
     assert pd.isna(team_a["constructor_points_share_trend_3v3"])
+
+
+def test_constructor_lineage_features_inherit_only_prior_alias_history():
+    races, results, qualifying = _inputs()
+    races.loc[1, "season"] = 2021
+    races.loc[1, "round"] = 1
+    races.loc[1, "date"] = "2021-03-08"
+    results.loc[results["round"] == 1, "constructor_id"] = results.loc[
+        results["round"] == 1, "driver_id"
+    ].map({"driver-a": "toro_rosso", "driver-b": "ferrari"})
+    results.loc[results["round"] == 2, "season"] = 2021
+    results.loc[results["round"] == 2, "round"] = 1
+    results.loc[results["round"] == 1, "constructor_id"] = results.loc[
+        results["round"] == 1, "driver_id"
+    ].map({"driver-a": "alphatauri", "driver-b": "ferrari"})
+    qualifying.loc[qualifying["round"] == 2, "season"] = 2021
+    qualifying.loc[qualifying["round"] == 2, "round"] = 1
+
+    features = build_pre_race_features(races, results, qualifying)
+    current = features[
+        (features["season"] == 2021) & (features["driver_id"] == "driver-a")
+    ].iloc[0]
+
+    # Exact source-ID history remains isolated, while experimental lineage
+    # history carries the prior Toro Rosso performance into AlphaTauri.
+    assert current["constructor_prior_starts"] == 0
+    assert current["constructor_prior_points"] == 0.0
+    assert current["lineage_prior_starts"] == 1
+    assert current["lineage_prior_wins"] == 1
+    assert current["lineage_prior_points"] == 25.0
+    assert current["lineage_points_last_3"] == 25.0
+    assert current["lineage_points_share_last_3"] == pytest.approx(25 / 43)
+
+
+def test_red_bull_racing_is_not_merged_with_rb_sister_team():
+    assert _constructor_lineage_id("rb") == "rb_sister_team_lineage"
+    assert _constructor_lineage_id("red_bull") == "red_bull"
