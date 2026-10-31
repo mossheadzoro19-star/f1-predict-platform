@@ -208,6 +208,8 @@ def test_constructor_lineage_features_inherit_only_prior_alias_history():
 
     # Exact source-ID history remains isolated, while experimental lineage
     # history carries the prior Toro Rosso performance into AlphaTauri.
+    assert current["constructor_id"] == "alphatauri"
+    assert current["constructor_lineage_id"] == "rb_sister_team_lineage"
     assert current["constructor_prior_starts"] == 0
     assert current["constructor_prior_points"] == 0.0
     assert current["lineage_prior_starts"] == 1
