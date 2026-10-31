@@ -11,3 +11,31 @@ data/processed/
 *.parquet
 *.csv
 !.github/
+# Generated packaging metadata
+*.egg-info/
+
+# Local model artifacts
+models/*.joblib
+
+# Generated experiment outputs
+reports/
+
+# Local FastF1 cache
+data/fastf1/cache/
+
+# Legacy archived datasets
+data/archive/
+# Generated packaging metadata
+*.egg-info/
+
+# Local model artifacts
+models/*.joblib
+
+# Generated experiment outputs (selected summaries are force-added below)
+reports/
+
+# Local FastF1 cache
+data/fastf1/cache/
+
+# Legacy archived datasets
+data/archive/

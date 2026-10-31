@@ -1,0 +1,2102 @@
+{
+  "validation_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "validation_races": 90,
+  "primary_metric": "log_loss",
+  "models": [
+    "logistic_regression",
+    "xgboost"
+  ],
+  "feature_sets": {
+    "full_baseline": [
+      "field_size",
+      "grid",
+      "qualifying_position",
+      "q1_seconds",
+      "q2_seconds",
+      "q3_seconds",
+      "qualifying_gap_to_pole_seconds",
+      "teammate_q3_gap_seconds",
+      "driver_prior_starts",
+      "driver_prior_wins",
+      "driver_prior_win_rate",
+      "driver_finish_last_3",
+      "driver_finish_last_5",
+      "driver_points_last_3",
+      "driver_points_last_5",
+      "driver_weighted_form_5",
+      "driver_prior_dnf_rate",
+      "constructor_prior_starts",
+      "constructor_prior_wins",
+      "constructor_prior_points",
+      "constructor_points_last_3",
+      "constructor_points_last_5",
+      "constructor_prior_win_rate",
+      "constructor_prior_dnf_rate",
+      "driver_circuit_prior_starts",
+      "driver_circuit_finish_last_3",
+      "driver_circuit_finish_last_5"
+    ],
+    "no_career_dominance": [
+      "field_size",
+      "grid",
+      "qualifying_position",
+      "q1_seconds",
+      "q2_seconds",
+      "q3_seconds",
+      "qualifying_gap_to_pole_seconds",
+      "teammate_q3_gap_seconds",
+      "driver_prior_starts",
+      "driver_finish_last_3",
+      "driver_finish_last_5",
+      "driver_points_last_3",
+      "driver_points_last_5",
+      "driver_weighted_form_5",
+      "driver_prior_dnf_rate",
+      "constructor_prior_starts",
+      "constructor_points_last_3",
+      "constructor_points_last_5",
+      "constructor_prior_dnf_rate",
+      "driver_circuit_prior_starts",
+      "driver_circuit_finish_last_3",
+      "driver_circuit_finish_last_5"
+    ],
+    "recent_form_qualifying": [
+      "field_size",
+      "grid",
+      "qualifying_position",
+      "q1_seconds",
+      "q2_seconds",
+      "q3_seconds",
+      "qualifying_gap_to_pole_seconds",
+      "teammate_q3_gap_seconds",
+      "driver_finish_last_3",
+      "driver_finish_last_5",
+      "driver_points_last_3",
+      "driver_points_last_5",
+      "driver_weighted_form_5",
+      "driver_prior_dnf_rate",
+      "constructor_points_last_3",
+      "constructor_points_last_5",
+      "constructor_prior_dnf_rate",
+      "driver_circuit_prior_starts",
+      "driver_circuit_finish_last_3",
+      "driver_circuit_finish_last_5"
+    ],
+    "qualifying_only": [
+      "field_size",
+      "grid",
+      "qualifying_position",
+      "q1_seconds",
+      "q2_seconds",
+      "q3_seconds",
+      "qualifying_gap_to_pole_seconds",
+      "teammate_q3_gap_seconds"
+    ],
+    "history_only": [
+      "driver_finish_last_3",
+      "driver_finish_last_5",
+      "driver_points_last_3",
+      "driver_points_last_5",
+      "driver_weighted_form_5",
+      "driver_prior_dnf_rate",
+      "constructor_points_last_3",
+      "constructor_points_last_5",
+      "constructor_prior_dnf_rate",
+      "driver_prior_starts",
+      "constructor_prior_starts",
+      "driver_prior_wins",
+      "driver_prior_win_rate",
+      "constructor_prior_wins",
+      "constructor_prior_points",
+      "constructor_prior_win_rate",
+      "driver_circuit_prior_starts",
+      "driver_circuit_finish_last_3",
+      "driver_circuit_finish_last_5"
+    ]
+  },
+  "folds": [
+    {
+      "validation_season": 2021,
+      "train_end_year": 2020,
+      "training_races": 59,
+      "validation_races": 22,
+      "metrics": {
+        "full_baseline": {
+          "logistic_regression": {
+            "races": 22,
+            "winner_accuracy": 0.36363636363636365,
+            "log_loss": 1.6552380799460777,
+            "multiclass_brier_score": 0.7487052209700945,
+            "top_label_ece": 0.22415610998047206,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.2,
+                "upper_bound": 0.30000000000000004,
+                "races": 1,
+                "mean_confidence": 0.28686266086635626,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 2,
+                "mean_confidence": 0.36377234288691074,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 3,
+                "mean_confidence": 0.43509165926230625,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 4,
+                "mean_confidence": 0.5464259683521456,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 10,
+                "mean_confidence": 0.6449547354644041,
+                "observed_win_rate": 0.4
+              },
+              {
+                "lower_bound": 0.7000000000000001,
+                "upper_bound": 0.8,
+                "races": 2,
+                "mean_confidence": 0.7157951193191547,
+                "observed_win_rate": 0.5
+              }
+            ]
+          },
+          "xgboost": {
+            "races": 22,
+            "winner_accuracy": 0.4090909090909091,
+            "log_loss": 1.450307461517253,
+            "multiclass_brier_score": 0.6960952514418494,
+            "top_label_ece": 0.18044577928851366,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.2,
+                "upper_bound": 0.30000000000000004,
+                "races": 1,
+                "mean_confidence": 0.2958758547016328,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 2,
+                "mean_confidence": 0.3582025460317395,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 10,
+                "mean_confidence": 0.4487174486468832,
+                "observed_win_rate": 0.3
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 3,
+                "mean_confidence": 0.5582564861353495,
+                "observed_win_rate": 0.6666666666666666
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 5,
+                "mean_confidence": 0.6610904354737334,
+                "observed_win_rate": 0.4
+              },
+              {
+                "lower_bound": 0.7000000000000001,
+                "upper_bound": 0.8,
+                "races": 1,
+                "mean_confidence": 0.7275208237223036,
+                "observed_win_rate": 1.0
+              }
+            ]
+          }
+        },
+        "no_career_dominance": {
+          "logistic_regression": {
+            "races": 22,
+            "winner_accuracy": 0.45454545454545453,
+            "log_loss": 1.589419066858141,
+            "multiclass_brier_score": 0.6846018893259211,
+            "top_label_ece": 0.05288131246056779,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.2,
+                "upper_bound": 0.30000000000000004,
+                "races": 1,
+                "mean_confidence": 0.28415616869003685,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 3,
+                "mean_confidence": 0.3555859647657466,
+                "observed_win_rate": 0.3333333333333333
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 16,
+                "mean_confidence": 0.4549183380351695,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 2,
+                "mean_confidence": 0.5455841098539633,
+                "observed_win_rate": 0.5
+              }
+            ]
+          },
+          "xgboost": {
+            "races": 22,
+            "winner_accuracy": 0.45454545454545453,
+            "log_loss": 1.442132966880077,
+            "multiclass_brier_score": 0.6861716045522693,
+            "top_label_ece": 0.14305580625412556,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.2,
+                "upper_bound": 0.30000000000000004,
+                "races": 1,
+                "mean_confidence": 0.2828363546240074,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 5,
+                "mean_confidence": 0.3815884610736843,
+                "observed_win_rate": 0.4
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 8,
+                "mean_confidence": 0.4621958580343636,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 1,
+                "mean_confidence": 0.5646068374699811,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 5,
+                "mean_confidence": 0.663661144509033,
+                "observed_win_rate": 0.4
+              },
+              {
+                "lower_bound": 0.7000000000000001,
+                "upper_bound": 0.8,
+                "races": 2,
+                "mean_confidence": 0.7065060037025304,
+                "observed_win_rate": 1.0
+              }
+            ]
+          }
+        },
+        "recent_form_qualifying": {
+          "logistic_regression": {
+            "races": 22,
+            "winner_accuracy": 0.45454545454545453,
+            "log_loss": 1.568277742245919,
+            "multiclass_brier_score": 0.6822226868511895,
+            "top_label_ece": 0.09461267029566765,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 4,
+                "mean_confidence": 0.37363367329274316,
+                "observed_win_rate": 0.25
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 13,
+                "mean_confidence": 0.4690460751180728,
+                "observed_win_rate": 0.46153846153846156
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 4,
+                "mean_confidence": 0.5381494836785051,
+                "observed_win_rate": 0.75
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 1,
+                "mean_confidence": 0.6419430115127903,
+                "observed_win_rate": 0.0
+              }
+            ]
+          },
+          "xgboost": {
+            "races": 22,
+            "winner_accuracy": 0.45454545454545453,
+            "log_loss": 1.4583313080793177,
+            "multiclass_brier_score": 0.6914115374129215,
+            "top_label_ece": 0.1085864195318508,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 7,
+                "mean_confidence": 0.3721533095072589,
+                "observed_win_rate": 0.42857142857142855
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 6,
+                "mean_confidence": 0.4610812609478858,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 2,
+                "mean_confidence": 0.526339263357753,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 4,
+                "mean_confidence": 0.6476124241590928,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.7000000000000001,
+                "upper_bound": 0.8,
+                "races": 3,
+                "mean_confidence": 0.7057779128623225,
+                "observed_win_rate": 0.6666666666666666
+              }
+            ]
+          }
+        },
+        "qualifying_only": {
+          "logistic_regression": {
+            "races": 22,
+            "winner_accuracy": 0.5,
+            "log_loss": 1.630180806092291,
+            "multiclass_brier_score": 0.7083637560958057,
+            "top_label_ece": 0.16312095454123468,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 15,
+                "mean_confidence": 0.35246782109498626,
+                "observed_win_rate": 0.4666666666666667
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 6,
+                "mean_confidence": 0.45236401519391306,
+                "observed_win_rate": 0.6666666666666666
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 1,
+                "mean_confidence": 0.5898624074954355,
+                "observed_win_rate": 0.0
+              }
+            ]
+          },
+          "xgboost": {
+            "races": 22,
+            "winner_accuracy": 0.5454545454545454,
+            "log_loss": 1.4980764733232812,
+            "multiclass_brier_score": 0.6763442815177352,
+            "top_label_ece": 0.185930737519153,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.2,
+                "upper_bound": 0.30000000000000004,
+                "races": 1,
+                "mean_confidence": 0.27074915087898216,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 8,
+                "mean_confidence": 0.35487999255489505,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 7,
+                "mean_confidence": 0.4560384987023797,
+                "observed_win_rate": 0.42857142857142855
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 4,
+                "mean_confidence": 0.5142282918893669,
+                "observed_win_rate": 0.75
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 1,
+                "mean_confidence": 0.6617003675571569,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.7000000000000001,
+                "upper_bound": 0.8,
+                "races": 1,
+                "mean_confidence": 0.7266093609374749,
+                "observed_win_rate": 0.0
+              }
+            ]
+          }
+        },
+        "history_only": {
+          "logistic_regression": {
+            "races": 22,
+            "winner_accuracy": 0.36363636363636365,
+            "log_loss": 1.9761475360121004,
+            "multiclass_brier_score": 0.8214734291914976,
+            "top_label_ece": 0.22540477503653011,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.2,
+                "upper_bound": 0.30000000000000004,
+                "races": 1,
+                "mean_confidence": 0.27851829734664235,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 2,
+                "mean_confidence": 0.3555963996609809,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 3,
+                "mean_confidence": 0.4586749406351789,
+                "observed_win_rate": 0.6666666666666666
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 11,
+                "mean_confidence": 0.5611112745637908,
+                "observed_win_rate": 0.45454545454545453
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 5,
+                "mean_confidence": 0.6345989511677791,
+                "observed_win_rate": 0.2
+              }
+            ]
+          },
+          "xgboost": {
+            "races": 22,
+            "winner_accuracy": 0.36363636363636365,
+            "log_loss": 2.0630375273696564,
+            "multiclass_brier_score": 0.8582423431598317,
+            "top_label_ece": 0.2600316679747657,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.2,
+                "upper_bound": 0.30000000000000004,
+                "races": 2,
+                "mean_confidence": 0.28095131223070624,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 6,
+                "mean_confidence": 0.36587407706222663,
+                "observed_win_rate": 0.16666666666666666
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 6,
+                "mean_confidence": 0.4225908760016446,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 4,
+                "mean_confidence": 0.5541593413897334,
+                "observed_win_rate": 0.75
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 2,
+                "mean_confidence": 0.6689196531111654,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.7000000000000001,
+                "upper_bound": 0.8,
+                "races": 2,
+                "mean_confidence": 0.7508490864396837,
+                "observed_win_rate": 0.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "validation_season": 2022,
+      "train_end_year": 2021,
+      "training_races": 81,
+      "validation_races": 22,
+      "metrics": {
+        "full_baseline": {
+          "logistic_regression": {
+            "races": 22,
+            "winner_accuracy": 0.5,
+            "log_loss": 1.2487772385969307,
+            "multiclass_brier_score": 0.6085854690904938,
+            "top_label_ece": 0.12693588649247078,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.2,
+                "upper_bound": 0.30000000000000004,
+                "races": 3,
+                "mean_confidence": 0.26353777387668315,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 8,
+                "mean_confidence": 0.3485427243283813,
+                "observed_win_rate": 0.375
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 2,
+                "mean_confidence": 0.4655960244973355,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 5,
+                "mean_confidence": 0.5460863771690029,
+                "observed_win_rate": 0.8
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 4,
+                "mean_confidence": 0.6370145223322392,
+                "observed_win_rate": 0.75
+              }
+            ]
+          },
+          "xgboost": {
+            "races": 22,
+            "winner_accuracy": 0.4090909090909091,
+            "log_loss": 1.132949259220294,
+            "multiclass_brier_score": 0.5909148877730092,
+            "top_label_ece": 0.19835374071147097,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 3,
+                "mean_confidence": 0.3784851976772677,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 10,
+                "mean_confidence": 0.44676417496449483,
+                "observed_win_rate": 0.4
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 5,
+                "mean_confidence": 0.5146173513555399,
+                "observed_win_rate": 0.2
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 2,
+                "mean_confidence": 0.6194901562923487,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.7000000000000001,
+                "upper_bound": 0.8,
+                "races": 1,
+                "mean_confidence": 0.7410020918399962,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.8,
+                "upper_bound": 0.9,
+                "races": 1,
+                "mean_confidence": 0.8324193993773961,
+                "observed_win_rate": 1.0
+              }
+            ]
+          }
+        },
+        "no_career_dominance": {
+          "logistic_regression": {
+            "races": 22,
+            "winner_accuracy": 0.45454545454545453,
+            "log_loss": 1.2887749826111283,
+            "multiclass_brier_score": 0.629464848497896,
+            "top_label_ece": 0.2681453441639425,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.2,
+                "upper_bound": 0.30000000000000004,
+                "races": 2,
+                "mean_confidence": 0.24116899510850937,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 8,
+                "mean_confidence": 0.3630657834310427,
+                "observed_win_rate": 0.25
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 5,
+                "mean_confidence": 0.44842717738388443,
+                "observed_win_rate": 0.2
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 5,
+                "mean_confidence": 0.5461667942565914,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 1,
+                "mean_confidence": 0.6716245475293818,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.7000000000000001,
+                "upper_bound": 0.8,
+                "races": 1,
+                "mean_confidence": 0.7059171687904356,
+                "observed_win_rate": 1.0
+              }
+            ]
+          },
+          "xgboost": {
+            "races": 22,
+            "winner_accuracy": 0.45454545454545453,
+            "log_loss": 1.2687213775727948,
+            "multiclass_brier_score": 0.6571849846881709,
+            "top_label_ece": 0.09500598967096663,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 2,
+                "mean_confidence": 0.38541886698411093,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 12,
+                "mean_confidence": 0.4514481590351402,
+                "observed_win_rate": 0.4166666666666667
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 4,
+                "mean_confidence": 0.5301319564692452,
+                "observed_win_rate": 0.25
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 3,
+                "mean_confidence": 0.6205760604407421,
+                "observed_win_rate": 0.6666666666666666
+              },
+              {
+                "lower_bound": 0.8,
+                "upper_bound": 0.9,
+                "races": 1,
+                "mean_confidence": 0.8152080462469484,
+                "observed_win_rate": 1.0
+              }
+            ]
+          }
+        },
+        "recent_form_qualifying": {
+          "logistic_regression": {
+            "races": 22,
+            "winner_accuracy": 0.45454545454545453,
+            "log_loss": 1.2912332505943283,
+            "multiclass_brier_score": 0.6305550890345808,
+            "top_label_ece": 0.19172847852167926,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.2,
+                "upper_bound": 0.30000000000000004,
+                "races": 2,
+                "mean_confidence": 0.24942344439130257,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 8,
+                "mean_confidence": 0.3585836099012155,
+                "observed_win_rate": 0.25
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 6,
+                "mean_confidence": 0.4476821811049107,
+                "observed_win_rate": 0.3333333333333333
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 4,
+                "mean_confidence": 0.5320954722364019,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 2,
+                "mean_confidence": 0.6452466696829839,
+                "observed_win_rate": 0.5
+              }
+            ]
+          },
+          "xgboost": {
+            "races": 22,
+            "winner_accuracy": 0.4090909090909091,
+            "log_loss": 1.2921518939495162,
+            "multiclass_brier_score": 0.6619657749350485,
+            "top_label_ece": 0.2435542185840061,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 3,
+                "mean_confidence": 0.38355852940430624,
+                "observed_win_rate": 0.6666666666666666
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 12,
+                "mean_confidence": 0.4480441145085214,
+                "observed_win_rate": 0.3333333333333333
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 4,
+                "mean_confidence": 0.537599450466845,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 2,
+                "mean_confidence": 0.6075720380045129,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.8,
+                "upper_bound": 0.9,
+                "races": 1,
+                "mean_confidence": 0.8029147028995582,
+                "observed_win_rate": 1.0
+              }
+            ]
+          }
+        },
+        "qualifying_only": {
+          "logistic_regression": {
+            "races": 22,
+            "winner_accuracy": 0.4090909090909091,
+            "log_loss": 1.5570731252334766,
+            "multiclass_brier_score": 0.7153271336473048,
+            "top_label_ece": 0.145687848177945,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 13,
+                "mean_confidence": 0.3789954699617933,
+                "observed_win_rate": 0.46153846153846156
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 7,
+                "mean_confidence": 0.4329793299768219,
+                "observed_win_rate": 0.2857142857142857
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 1,
+                "mean_confidence": 0.5101616756761282,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 1,
+                "mean_confidence": 0.6113801352564768,
+                "observed_win_rate": 0.0
+              }
+            ]
+          },
+          "xgboost": {
+            "races": 22,
+            "winner_accuracy": 0.45454545454545453,
+            "log_loss": 1.538043546663451,
+            "multiclass_brier_score": 0.7087067378192956,
+            "top_label_ece": 0.15643504798889732,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 5,
+                "mean_confidence": 0.35414249504478834,
+                "observed_win_rate": 0.6
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 8,
+                "mean_confidence": 0.44703382878806713,
+                "observed_win_rate": 0.375
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 7,
+                "mean_confidence": 0.5393146669761791,
+                "observed_win_rate": 0.42857142857142855
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 1,
+                "mean_confidence": 0.6121658006276983,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.7000000000000001,
+                "upper_bound": 0.8,
+                "races": 1,
+                "mean_confidence": 0.7513555687858067,
+                "observed_win_rate": 1.0
+              }
+            ]
+          }
+        },
+        "history_only": {
+          "logistic_regression": {
+            "races": 22,
+            "winner_accuracy": 0.3181818181818182,
+            "log_loss": 1.5678909780487702,
+            "multiclass_brier_score": 0.734254269304686,
+            "top_label_ece": 0.13721443369419065,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.2,
+                "upper_bound": 0.30000000000000004,
+                "races": 3,
+                "mean_confidence": 0.2768686735973264,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 5,
+                "mean_confidence": 0.3620015013068671,
+                "observed_win_rate": 0.2
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 12,
+                "mean_confidence": 0.4386468998851101,
+                "observed_win_rate": 0.4166666666666667
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 1,
+                "mean_confidence": 0.5042615640511345,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 1,
+                "mean_confidence": 0.6186027793756933,
+                "observed_win_rate": 0.0
+              }
+            ]
+          },
+          "xgboost": {
+            "races": 22,
+            "winner_accuracy": 0.5454545454545454,
+            "log_loss": 1.5610161807459093,
+            "multiclass_brier_score": 0.6637393233355852,
+            "top_label_ece": 0.09772739717353454,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 7,
+                "mean_confidence": 0.37439227671089165,
+                "observed_win_rate": 0.42857142857142855
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 10,
+                "mean_confidence": 0.4571657825600526,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 5,
+                "mean_confidence": 0.5315186999210946,
+                "observed_win_rate": 0.8
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "validation_season": 2023,
+      "train_end_year": 2022,
+      "training_races": 103,
+      "validation_races": 22,
+      "metrics": {
+        "full_baseline": {
+          "logistic_regression": {
+            "races": 22,
+            "winner_accuracy": 0.9090909090909091,
+            "log_loss": 0.6485409319351066,
+            "multiclass_brier_score": 0.28976484765410754,
+            "top_label_ece": 0.2937976654609403,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.2,
+                "upper_bound": 0.30000000000000004,
+                "races": 2,
+                "mean_confidence": 0.2623027293194465,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 2,
+                "mean_confidence": 0.4640101545213534,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 5,
+                "mean_confidence": 0.5403654979657427,
+                "observed_win_rate": 0.8
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 6,
+                "mean_confidence": 0.6617396756688547,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.7000000000000001,
+                "upper_bound": 0.8,
+                "races": 6,
+                "mean_confidence": 0.7632785521103295,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.8,
+                "upper_bound": 0.9,
+                "races": 1,
+                "mean_confidence": 0.831888735673894,
+                "observed_win_rate": 1.0
+              }
+            ]
+          },
+          "xgboost": {
+            "races": 22,
+            "winner_accuracy": 0.8636363636363636,
+            "log_loss": 0.6612272416978887,
+            "multiclass_brier_score": 0.28251667102931927,
+            "top_label_ece": 0.28074296515771846,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.2,
+                "upper_bound": 0.30000000000000004,
+                "races": 1,
+                "mean_confidence": 0.2969716226208586,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 2,
+                "mean_confidence": 0.3242835139587137,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 1,
+                "mean_confidence": 0.4298014823033667,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 1,
+                "mean_confidence": 0.5819324427972785,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 7,
+                "mean_confidence": 0.6512508522260969,
+                "observed_win_rate": 0.8571428571428571
+              },
+              {
+                "lower_bound": 0.7000000000000001,
+                "upper_bound": 0.8,
+                "races": 7,
+                "mean_confidence": 0.7552940502229938,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.8,
+                "upper_bound": 0.9,
+                "races": 3,
+                "mean_confidence": 0.8247046945320259,
+                "observed_win_rate": 1.0
+              }
+            ]
+          }
+        },
+        "no_career_dominance": {
+          "logistic_regression": {
+            "races": 22,
+            "winner_accuracy": 0.8636363636363636,
+            "log_loss": 0.7041406374413437,
+            "multiclass_brier_score": 0.3037194722330348,
+            "top_label_ece": 0.303891649002601,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.2,
+                "upper_bound": 0.30000000000000004,
+                "races": 1,
+                "mean_confidence": 0.29156237551228725,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 1,
+                "mean_confidence": 0.3388421705863425,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 3,
+                "mean_confidence": 0.4543528816016124,
+                "observed_win_rate": 0.6666666666666666
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 5,
+                "mean_confidence": 0.547526711558374,
+                "observed_win_rate": 0.8
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 8,
+                "mean_confidence": 0.6541207814485437,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.7000000000000001,
+                "upper_bound": 0.8,
+                "races": 4,
+                "mean_confidence": 0.7333613681709165,
+                "observed_win_rate": 1.0
+              }
+            ]
+          },
+          "xgboost": {
+            "races": 22,
+            "winner_accuracy": 0.8181818181818182,
+            "log_loss": 0.7357901984001208,
+            "multiclass_brier_score": 0.3184323668740099,
+            "top_label_ece": 0.2420829164775539,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 2,
+                "mean_confidence": 0.3290692461284741,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 2,
+                "mean_confidence": 0.45292550265747733,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 2,
+                "mean_confidence": 0.5759730036483063,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 8,
+                "mean_confidence": 0.6607008011360549,
+                "observed_win_rate": 0.875
+              },
+              {
+                "lower_bound": 0.7000000000000001,
+                "upper_bound": 0.8,
+                "races": 7,
+                "mean_confidence": 0.736201000880708,
+                "observed_win_rate": 0.8571428571428571
+              },
+              {
+                "lower_bound": 0.8,
+                "upper_bound": 0.9,
+                "races": 1,
+                "mean_confidence": 0.8355039018858,
+                "observed_win_rate": 1.0
+              }
+            ]
+          }
+        },
+        "recent_form_qualifying": {
+          "logistic_regression": {
+            "races": 22,
+            "winner_accuracy": 0.8636363636363636,
+            "log_loss": 0.7182463239410143,
+            "multiclass_brier_score": 0.31247755620394185,
+            "top_label_ece": 0.28175619508158667,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 2,
+                "mean_confidence": 0.326582571715325,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 3,
+                "mean_confidence": 0.44854732336481523,
+                "observed_win_rate": 0.6666666666666666
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 7,
+                "mean_confidence": 0.5677372564288614,
+                "observed_win_rate": 0.8571428571428571
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 8,
+                "mean_confidence": 0.6724777790527948,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.7000000000000001,
+                "upper_bound": 0.8,
+                "races": 2,
+                "mean_confidence": 0.7242867836278041,
+                "observed_win_rate": 1.0
+              }
+            ]
+          },
+          "xgboost": {
+            "races": 22,
+            "winner_accuracy": 0.8181818181818182,
+            "log_loss": 0.7928531611018925,
+            "multiclass_brier_score": 0.34145047094533865,
+            "top_label_ece": 0.215269159803152,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 3,
+                "mean_confidence": 0.3457240321380078,
+                "observed_win_rate": 0.3333333333333333
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 1,
+                "mean_confidence": 0.444552604197035,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 3,
+                "mean_confidence": 0.5442791931568006,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 11,
+                "mean_confidence": 0.6518777631470071,
+                "observed_win_rate": 0.8181818181818182
+              },
+              {
+                "lower_bound": 0.7000000000000001,
+                "upper_bound": 0.8,
+                "races": 3,
+                "mean_confidence": 0.7428340005181813,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.8,
+                "upper_bound": 0.9,
+                "races": 1,
+                "mean_confidence": 0.8247030009056214,
+                "observed_win_rate": 1.0
+              }
+            ]
+          }
+        },
+        "qualifying_only": {
+          "logistic_regression": {
+            "races": 22,
+            "winner_accuracy": 0.6818181818181818,
+            "log_loss": 1.3663378793835284,
+            "multiclass_brier_score": 0.6005501736417805,
+            "top_label_ece": 0.2832887273865561,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 12,
+                "mean_confidence": 0.36518226212323296,
+                "observed_win_rate": 0.6666666666666666
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 9,
+                "mean_confidence": 0.42527827058722206,
+                "observed_win_rate": 0.6666666666666666
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 1,
+                "mean_confidence": 0.5579564167319709,
+                "observed_win_rate": 1.0
+              }
+            ]
+          },
+          "xgboost": {
+            "races": 22,
+            "winner_accuracy": 0.5454545454545454,
+            "log_loss": 1.4129506248326935,
+            "multiclass_brier_score": 0.5972088132607102,
+            "top_label_ece": 0.24052994845840156,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.2,
+                "upper_bound": 0.30000000000000004,
+                "races": 1,
+                "mean_confidence": 0.28045184627477804,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 5,
+                "mean_confidence": 0.37547414083324465,
+                "observed_win_rate": 0.2
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 7,
+                "mean_confidence": 0.4402222555942454,
+                "observed_win_rate": 0.7142857142857143
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 6,
+                "mean_confidence": 0.5404585719055475,
+                "observed_win_rate": 0.6666666666666666
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 2,
+                "mean_confidence": 0.62600120559263,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.7000000000000001,
+                "upper_bound": 0.8,
+                "races": 1,
+                "mean_confidence": 0.7101459474220961,
+                "observed_win_rate": 0.0
+              }
+            ]
+          }
+        },
+        "history_only": {
+          "logistic_regression": {
+            "races": 22,
+            "winner_accuracy": 0.8636363636363636,
+            "log_loss": 0.9264332490197856,
+            "multiclass_brier_score": 0.40387537959417047,
+            "top_label_ece": 0.35089707575877893,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 1,
+                "mean_confidence": 0.33077839769043554,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 9,
+                "mean_confidence": 0.46559467557587275,
+                "observed_win_rate": 0.7777777777777778
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 11,
+                "mean_confidence": 0.5545382289150119,
+                "observed_win_rate": 0.9090909090909091
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 1,
+                "mean_confidence": 0.6592133373684413,
+                "observed_win_rate": 1.0
+              }
+            ]
+          },
+          "xgboost": {
+            "races": 22,
+            "winner_accuracy": 0.8181818181818182,
+            "log_loss": 1.0649080662991313,
+            "multiclass_brier_score": 0.4420237302631147,
+            "top_label_ece": 0.3496123799343902,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.2,
+                "upper_bound": 0.30000000000000004,
+                "races": 1,
+                "mean_confidence": 0.29058919727363597,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 2,
+                "mean_confidence": 0.3220766121387628,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 6,
+                "mean_confidence": 0.4546601570064288,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 4,
+                "mean_confidence": 0.5149687274022988,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 7,
+                "mean_confidence": 0.6280811872576899,
+                "observed_win_rate": 0.5714285714285714
+              },
+              {
+                "lower_bound": 0.7000000000000001,
+                "upper_bound": 0.8,
+                "races": 1,
+                "mean_confidence": 0.7528344607426044,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.8,
+                "upper_bound": 0.9,
+                "races": 1,
+                "mean_confidence": 0.8108616128529822,
+                "observed_win_rate": 1.0
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "validation_season": 2024,
+      "train_end_year": 2023,
+      "training_races": 125,
+      "validation_races": 24,
+      "metrics": {
+        "full_baseline": {
+          "logistic_regression": {
+            "races": 24,
+            "winner_accuracy": 0.4166666666666667,
+            "log_loss": 1.786701808595301,
+            "multiclass_brier_score": 0.768397173403346,
+            "top_label_ece": 0.1673120114323414,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.2,
+                "upper_bound": 0.30000000000000004,
+                "races": 1,
+                "mean_confidence": 0.25632845129359993,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 3,
+                "mean_confidence": 0.373705014914444,
+                "observed_win_rate": 0.3333333333333333
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 3,
+                "mean_confidence": 0.45559095909394226,
+                "observed_win_rate": 0.3333333333333333
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 5,
+                "mean_confidence": 0.5521268156848501,
+                "observed_win_rate": 0.2
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 11,
+                "mean_confidence": 0.6675501224279862,
+                "observed_win_rate": 0.5454545454545454
+              },
+              {
+                "lower_bound": 0.8,
+                "upper_bound": 0.9,
+                "races": 1,
+                "mean_confidence": 0.8324135240746642,
+                "observed_win_rate": 1.0
+              }
+            ]
+          },
+          "xgboost": {
+            "races": 24,
+            "winner_accuracy": 0.5,
+            "log_loss": 1.449685225731601,
+            "multiclass_brier_score": 0.690067991463302,
+            "top_label_ece": 0.17433941278147147,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 3,
+                "mean_confidence": 0.36064258568288304,
+                "observed_win_rate": 0.3333333333333333
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 4,
+                "mean_confidence": 0.4336303081025812,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 3,
+                "mean_confidence": 0.5496213537317606,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 4,
+                "mean_confidence": 0.6612187408595571,
+                "observed_win_rate": 0.75
+              },
+              {
+                "lower_bound": 0.7000000000000001,
+                "upper_bound": 0.8,
+                "races": 7,
+                "mean_confidence": 0.7507578826852603,
+                "observed_win_rate": 0.5714285714285714
+              },
+              {
+                "lower_bound": 0.8,
+                "upper_bound": 0.9,
+                "races": 3,
+                "mean_confidence": 0.8591483685210383,
+                "observed_win_rate": 0.6666666666666666
+              }
+            ]
+          }
+        },
+        "no_career_dominance": {
+          "logistic_regression": {
+            "races": 24,
+            "winner_accuracy": 0.5,
+            "log_loss": 1.7327297924934324,
+            "multiclass_brier_score": 0.7188737976507852,
+            "top_label_ece": 0.10944283970910997,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.2,
+                "upper_bound": 0.30000000000000004,
+                "races": 3,
+                "mean_confidence": 0.26537309814426724,
+                "observed_win_rate": 0.3333333333333333
+              },
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 2,
+                "mean_confidence": 0.3567124690034596,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 13,
+                "mean_confidence": 0.44633645026871605,
+                "observed_win_rate": 0.5384615384615384
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 5,
+                "mean_confidence": 0.5369611448587192,
+                "observed_win_rate": 0.4
+              },
+              {
+                "lower_bound": 0.7000000000000001,
+                "upper_bound": 0.8,
+                "races": 1,
+                "mean_confidence": 0.7462594853419267,
+                "observed_win_rate": 1.0
+              }
+            ]
+          },
+          "xgboost": {
+            "races": 24,
+            "winner_accuracy": 0.5416666666666666,
+            "log_loss": 1.549152985021946,
+            "multiclass_brier_score": 0.7026445368451261,
+            "top_label_ece": 0.22559928280512365,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 7,
+                "mean_confidence": 0.4826183901367068,
+                "observed_win_rate": 0.7142857142857143
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 3,
+                "mean_confidence": 0.5417590366239142,
+                "observed_win_rate": 0.3333333333333333
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 8,
+                "mean_confidence": 0.6510690355146751,
+                "observed_win_rate": 0.375
+              },
+              {
+                "lower_bound": 0.7000000000000001,
+                "upper_bound": 0.8,
+                "races": 2,
+                "mean_confidence": 0.7744954645342774,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.8,
+                "upper_bound": 0.9,
+                "races": 4,
+                "mean_confidence": 0.8524727988055542,
+                "observed_win_rate": 0.75
+              }
+            ]
+          }
+        },
+        "recent_form_qualifying": {
+          "logistic_regression": {
+            "races": 24,
+            "winner_accuracy": 0.5,
+            "log_loss": 1.6064816074469759,
+            "multiclass_brier_score": 0.6860784593953438,
+            "top_label_ece": 0.13888015084500996,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.2,
+                "upper_bound": 0.30000000000000004,
+                "races": 3,
+                "mean_confidence": 0.2757089628531261,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 5,
+                "mean_confidence": 0.3669392536660855,
+                "observed_win_rate": 0.4
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 9,
+                "mean_confidence": 0.4457943857376398,
+                "observed_win_rate": 0.5555555555555556
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 4,
+                "mean_confidence": 0.549810635581747,
+                "observed_win_rate": 0.75
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 2,
+                "mean_confidence": 0.638167940247923,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.7000000000000001,
+                "upper_bound": 0.8,
+                "races": 1,
+                "mean_confidence": 0.7242508664788119,
+                "observed_win_rate": 1.0
+              }
+            ]
+          },
+          "xgboost": {
+            "races": 24,
+            "winner_accuracy": 0.5,
+            "log_loss": 1.5787672320348873,
+            "multiclass_brier_score": 0.698318669025225,
+            "top_label_ece": 0.20210010463015862,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 4,
+                "mean_confidence": 0.4571059861439089,
+                "observed_win_rate": 0.25
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 9,
+                "mean_confidence": 0.5510293553092767,
+                "observed_win_rate": 0.6666666666666666
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 5,
+                "mean_confidence": 0.6349301168314799,
+                "observed_win_rate": 0.2
+              },
+              {
+                "lower_bound": 0.7000000000000001,
+                "upper_bound": 0.8,
+                "races": 2,
+                "mean_confidence": 0.7499329014111489,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.8,
+                "upper_bound": 0.9,
+                "races": 4,
+                "mean_confidence": 0.826681594337991,
+                "observed_win_rate": 0.75
+              }
+            ]
+          }
+        },
+        "qualifying_only": {
+          "logistic_regression": {
+            "races": 24,
+            "winner_accuracy": 0.5,
+            "log_loss": 1.5866152810354552,
+            "multiclass_brier_score": 0.6792601835972832,
+            "top_label_ece": 0.09777252873359263,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 14,
+                "mean_confidence": 0.3723022464644451,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 9,
+                "mean_confidence": 0.4294642866168621,
+                "observed_win_rate": 0.4444444444444444
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 1,
+                "mean_confidence": 0.5760492803397864,
+                "observed_win_rate": 1.0
+              }
+            ]
+          },
+          "xgboost": {
+            "races": 24,
+            "winner_accuracy": 0.5416666666666666,
+            "log_loss": 1.4966319050248729,
+            "multiclass_brier_score": 0.6471292372921102,
+            "top_label_ece": 0.21190289340062646,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 1,
+                "mean_confidence": 0.3602608013856278,
+                "observed_win_rate": 1.0
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 10,
+                "mean_confidence": 0.4380275019909862,
+                "observed_win_rate": 0.3
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 12,
+                "mean_confidence": 0.5532077887999002,
+                "observed_win_rate": 0.75
+              },
+              {
+                "lower_bound": 0.7000000000000001,
+                "upper_bound": 0.8,
+                "races": 1,
+                "mean_confidence": 0.7041486886896028,
+                "observed_win_rate": 0.0
+              }
+            ]
+          }
+        },
+        "history_only": {
+          "logistic_regression": {
+            "races": 24,
+            "winner_accuracy": 0.4166666666666667,
+            "log_loss": 2.033180669533185,
+            "multiclass_brier_score": 0.7838768951257563,
+            "top_label_ece": 0.18779065209842194,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.1,
+                "upper_bound": 0.2,
+                "races": 1,
+                "mean_confidence": 0.19991063429409486,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.2,
+                "upper_bound": 0.30000000000000004,
+                "races": 4,
+                "mean_confidence": 0.2551761308029,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 5,
+                "mean_confidence": 0.3570236451729597,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 7,
+                "mean_confidence": 0.447662753890771,
+                "observed_win_rate": 0.5714285714285714
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 4,
+                "mean_confidence": 0.5193519644920755,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 2,
+                "mean_confidence": 0.6717751522694264,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.7000000000000001,
+                "upper_bound": 0.8,
+                "races": 1,
+                "mean_confidence": 0.7446675718569246,
+                "observed_win_rate": 1.0
+              }
+            ]
+          },
+          "xgboost": {
+            "races": 24,
+            "winner_accuracy": 0.4166666666666667,
+            "log_loss": 1.97952543902223,
+            "multiclass_brier_score": 0.8035400035745216,
+            "top_label_ece": 0.1202529749316448,
+            "reliability_bins": [
+              {
+                "lower_bound": 0.2,
+                "upper_bound": 0.30000000000000004,
+                "races": 1,
+                "mean_confidence": 0.2918568393826373,
+                "observed_win_rate": 0.0
+              },
+              {
+                "lower_bound": 0.30000000000000004,
+                "upper_bound": 0.4,
+                "races": 6,
+                "mean_confidence": 0.3414024463385248,
+                "observed_win_rate": 0.3333333333333333
+              },
+              {
+                "lower_bound": 0.4,
+                "upper_bound": 0.5,
+                "races": 4,
+                "mean_confidence": 0.46165250831287397,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.5,
+                "upper_bound": 0.6000000000000001,
+                "races": 6,
+                "mean_confidence": 0.5709724393086612,
+                "observed_win_rate": 0.5
+              },
+              {
+                "lower_bound": 0.6000000000000001,
+                "upper_bound": 0.7000000000000001,
+                "races": 3,
+                "mean_confidence": 0.6506198622470576,
+                "observed_win_rate": 0.3333333333333333
+              },
+              {
+                "lower_bound": 0.7000000000000001,
+                "upper_bound": 0.8,
+                "races": 4,
+                "mean_confidence": 0.7536789229010113,
+                "observed_win_rate": 0.5
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "combined_out_of_fold_metrics": [
+    {
+      "feature_set": "full_baseline",
+      "model": "logistic_regression",
+      "validation_races": 90,
+      "winner_accuracy": 0.5444444444444444,
+      "log_loss": 1.3448564546311752,
+      "multiclass_brier_score": 0.6075194887933735
+    },
+    {
+      "feature_set": "full_baseline",
+      "model": "xgboost",
+      "validation_races": 90,
+      "winner_accuracy": 0.5444444444444444,
+      "log_loss": 1.1796788065682002,
+      "multiclass_brier_score": 0.5676802402276796
+    },
+    {
+      "feature_set": "history_only",
+      "model": "logistic_regression",
+      "validation_races": 90,
+      "winner_accuracy": 0.4888888888888889,
+      "log_loss": 1.6349634984063433,
+      "multiclass_brier_score": 0.6880479244556216
+    },
+    {
+      "feature_set": "history_only",
+      "model": "xgboost",
+      "validation_races": 90,
+      "winner_accuracy": 0.5333333333333333,
+      "log_loss": 1.6740641063739652,
+      "multiclass_brier_score": 0.6943675423830691
+    },
+    {
+      "feature_set": "no_career_dominance",
+      "model": "logistic_regression",
+      "validation_races": 90,
+      "winner_accuracy": 0.5666666666666667,
+      "log_loss": 1.3377430903541763,
+      "multiclass_brier_score": 0.5871585307207732
+    },
+    {
+      "feature_set": "no_career_dominance",
+      "model": "xgboost",
+      "validation_races": 90,
+      "winner_accuracy": 0.5666666666666667,
+      "log_loss": 1.2556205731476948,
+      "multiclass_brier_score": 0.5935869546533437
+    },
+    {
+      "feature_set": "qualifying_only",
+      "model": "logistic_regression",
+      "validation_races": 90,
+      "winner_accuracy": 0.5222222222222223,
+      "log_loss": 1.5361976286717272,
+      "multiclass_brier_score": 0.6759505311200267
+    },
+    {
+      "feature_set": "qualifying_only",
+      "model": "xgboost",
+      "validation_races": 90,
+      "winner_accuracy": 0.5222222222222223,
+      "log_loss": 1.4866524434069368,
+      "multiclass_brier_score": 0.6571202001351216
+    },
+    {
+      "feature_set": "recent_form_qualifying",
+      "model": "logistic_regression",
+      "validation_races": 90,
+      "winner_accuracy": 0.5666666666666667,
+      "log_loss": 1.3029579949768353,
+      "multiclass_brier_score": 0.5802388925717992
+    },
+    {
+      "feature_set": "recent_form_qualifying",
+      "model": "xgboost",
+      "validation_races": 90,
+      "winner_accuracy": 0.5444444444444444,
+      "log_loss": 1.287153483974592,
+      "multiclass_brier_score": 0.6005095476562021
+    }
+  ],
+  "holdout_policy": "Only seasons through 2024 are allowed. 2025 is reserved and must not be loaded, evaluated, or used for model selection."
+}

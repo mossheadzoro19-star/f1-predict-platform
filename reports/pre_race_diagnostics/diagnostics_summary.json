@@ -1,0 +1,327 @@
+{
+  "training_seasons": [
+    2018,
+    2019,
+    2020,
+    2021,
+    2022
+  ],
+  "validation_seasons": [
+    2023,
+    2024
+  ],
+  "validation_races": 46,
+  "xgboost_validation_metrics": {
+    "races": 46,
+    "winner_accuracy": 0.6739130434782609,
+    "log_loss": 1.039480570485149,
+    "multiclass_brier_score": 0.47285387122279504,
+    "top_label_ece": 0.15468091779020296,
+    "reliability_bins": [
+      {
+        "lower_bound": 0.2,
+        "upper_bound": 0.30000000000000004,
+        "races": 1,
+        "mean_confidence": 0.2969716226208586,
+        "observed_win_rate": 0.0
+      },
+      {
+        "lower_bound": 0.30000000000000004,
+        "upper_bound": 0.4,
+        "races": 5,
+        "mean_confidence": 0.3509136904177221,
+        "observed_win_rate": 0.6
+      },
+      {
+        "lower_bound": 0.4,
+        "upper_bound": 0.5,
+        "races": 8,
+        "mean_confidence": 0.4484580248604837,
+        "observed_win_rate": 0.25
+      },
+      {
+        "lower_bound": 0.5,
+        "upper_bound": 0.6000000000000001,
+        "races": 6,
+        "mean_confidence": 0.5559857107438079,
+        "observed_win_rate": 0.6666666666666666
+      },
+      {
+        "lower_bound": 0.6000000000000001,
+        "upper_bound": 0.7000000000000001,
+        "races": 12,
+        "mean_confidence": 0.6554452884460099,
+        "observed_win_rate": 0.75
+      },
+      {
+        "lower_bound": 0.7000000000000001,
+        "upper_bound": 0.8,
+        "races": 10,
+        "mean_confidence": 0.7524983579335834,
+        "observed_win_rate": 0.9
+      },
+      {
+        "lower_bound": 0.8,
+        "upper_bound": 0.9,
+        "races": 4,
+        "mean_confidence": 0.8221259614789952,
+        "observed_win_rate": 1.0
+      }
+    ]
+  },
+  "xgboost_season_metrics": {
+    "2023": {
+      "races": 22,
+      "winner_accuracy": 0.8636363636363636,
+      "log_loss": 0.6612272416978887,
+      "multiclass_brier_score": 0.28251667102931927,
+      "top_label_ece": 0.28074296515771846,
+      "reliability_bins": [
+        {
+          "lower_bound": 0.2,
+          "upper_bound": 0.30000000000000004,
+          "races": 1,
+          "mean_confidence": 0.2969716226208586,
+          "observed_win_rate": 0.0
+        },
+        {
+          "lower_bound": 0.30000000000000004,
+          "upper_bound": 0.4,
+          "races": 2,
+          "mean_confidence": 0.3242835139587137,
+          "observed_win_rate": 1.0
+        },
+        {
+          "lower_bound": 0.4,
+          "upper_bound": 0.5,
+          "races": 1,
+          "mean_confidence": 0.4298014823033667,
+          "observed_win_rate": 0.0
+        },
+        {
+          "lower_bound": 0.5,
+          "upper_bound": 0.6000000000000001,
+          "races": 1,
+          "mean_confidence": 0.5819324427972785,
+          "observed_win_rate": 1.0
+        },
+        {
+          "lower_bound": 0.6000000000000001,
+          "upper_bound": 0.7000000000000001,
+          "races": 7,
+          "mean_confidence": 0.6512508522260969,
+          "observed_win_rate": 0.8571428571428571
+        },
+        {
+          "lower_bound": 0.7000000000000001,
+          "upper_bound": 0.8,
+          "races": 7,
+          "mean_confidence": 0.7552940502229938,
+          "observed_win_rate": 1.0
+        },
+        {
+          "lower_bound": 0.8,
+          "upper_bound": 0.9,
+          "races": 3,
+          "mean_confidence": 0.8247046945320259,
+          "observed_win_rate": 1.0
+        }
+      ]
+    },
+    "2024": {
+      "races": 24,
+      "winner_accuracy": 0.5,
+      "log_loss": 1.3862127885401376,
+      "multiclass_brier_score": 0.6473296380668145,
+      "top_label_ece": 0.09333355334627227,
+      "reliability_bins": [
+        {
+          "lower_bound": 0.30000000000000004,
+          "upper_bound": 0.4,
+          "races": 3,
+          "mean_confidence": 0.36866714139039436,
+          "observed_win_rate": 0.3333333333333333
+        },
+        {
+          "lower_bound": 0.4,
+          "upper_bound": 0.5,
+          "races": 7,
+          "mean_confidence": 0.4511232452257862,
+          "observed_win_rate": 0.2857142857142857
+        },
+        {
+          "lower_bound": 0.5,
+          "upper_bound": 0.6000000000000001,
+          "races": 5,
+          "mean_confidence": 0.5507963643331137,
+          "observed_win_rate": 0.6
+        },
+        {
+          "lower_bound": 0.6000000000000001,
+          "upper_bound": 0.7000000000000001,
+          "races": 5,
+          "mean_confidence": 0.6613174991538884,
+          "observed_win_rate": 0.6
+        },
+        {
+          "lower_bound": 0.7000000000000001,
+          "upper_bound": 0.8,
+          "races": 3,
+          "mean_confidence": 0.7459750759249593,
+          "observed_win_rate": 0.6666666666666666
+        },
+        {
+          "lower_bound": 0.8,
+          "upper_bound": 0.9,
+          "races": 1,
+          "mean_confidence": 0.8143897623199029,
+          "observed_win_rate": 1.0
+        }
+      ]
+    }
+  },
+  "worst_log_loss_races": [
+    {
+      "season": 2024,
+      "round": 16,
+      "actual_winner_driver_id": "leclerc",
+      "predicted_winner_driver_id": "piastri",
+      "actual_winner_probability": 0.030453248022556632,
+      "actual_winner_probability_rank": 6,
+      "actual_winner_qualifying_position": 4.0,
+      "actual_winner_grid": 4,
+      "actual_winner_qualifying_gap_to_pole_seconds": 0.13400000000000034,
+      "actual_winner_driver_points_last_5": 42.0,
+      "actual_winner_driver_prior_win_rate": 0.04285714285714286,
+      "actual_winner_constructor_prior_points": 2754.5
+    },
+    {
+      "season": 2024,
+      "round": 21,
+      "actual_winner_driver_id": "max_verstappen",
+      "predicted_winner_driver_id": "norris",
+      "actual_winner_probability": 0.036103803771836585,
+      "actual_winner_probability_rank": 6,
+      "actual_winner_qualifying_position": 12.0,
+      "actual_winner_grid": 17,
+      "actual_winner_qualifying_gap_to_pole_seconds": NaN,
+      "actual_winner_driver_points_last_5": 59.0,
+      "actual_winner_driver_prior_win_rate": 0.4,
+      "actual_winner_constructor_prior_points": 3714.5
+    },
+    {
+      "season": 2024,
+      "round": 6,
+      "actual_winner_driver_id": "norris",
+      "predicted_winner_driver_id": "max_verstappen",
+      "actual_winner_probability": 0.042513586486888966,
+      "actual_winner_probability_rank": 5,
+      "actual_winner_qualifying_position": 5.0,
+      "actual_winner_grid": 5,
+      "actual_winner_qualifying_gap_to_pole_seconds": 0.35299999999999443,
+      "actual_winner_driver_points_last_5": 55.0,
+      "actual_winner_driver_prior_win_rate": 0.0,
+      "actual_winner_constructor_prior_points": 1190.0
+    },
+    {
+      "season": 2024,
+      "round": 19,
+      "actual_winner_driver_id": "leclerc",
+      "predicted_winner_driver_id": "max_verstappen",
+      "actual_winner_probability": 0.043852317282501066,
+      "actual_winner_probability_rank": 4,
+      "actual_winner_qualifying_position": 4.0,
+      "actual_winner_grid": 4,
+      "actual_winner_qualifying_gap_to_pole_seconds": 0.4100000000000108,
+      "actual_winner_driver_points_last_5": 83.0,
+      "actual_winner_driver_prior_win_rate": 0.04895104895104895,
+      "actual_winner_constructor_prior_points": 2825.5
+    },
+    {
+      "season": 2024,
+      "round": 11,
+      "actual_winner_driver_id": "russell",
+      "predicted_winner_driver_id": "max_verstappen",
+      "actual_winner_probability": 0.07038395069946118,
+      "actual_winner_probability_rank": 3,
+      "actual_winner_qualifying_position": 3.0,
+      "actual_winner_grid": 3,
+      "actual_winner_qualifying_gap_to_pole_seconds": 0.5260000000000105,
+      "actual_winner_driver_points_last_5": 48.0,
+      "actual_winner_driver_prior_win_rate": 0.008771929824561403,
+      "actual_winner_constructor_prior_points": 3583.5
+    },
+    {
+      "season": 2023,
+      "round": 4,
+      "actual_winner_driver_id": "perez",
+      "predicted_winner_driver_id": "max_verstappen",
+      "actual_winner_probability": 0.07943503130722875,
+      "actual_winner_probability_rank": 3,
+      "actual_winner_qualifying_position": 3.0,
+      "actual_winner_grid": 3,
+      "actual_winner_qualifying_gap_to_pole_seconds": 0.2920000000000016,
+      "actual_winner_driver_points_last_5": 75.0,
+      "actual_winner_driver_prior_win_rate": 0.04807692307692308,
+      "actual_winner_constructor_prior_points": 2580.5
+    },
+    {
+      "season": 2023,
+      "round": 18,
+      "actual_winner_driver_id": "max_verstappen",
+      "predicted_winner_driver_id": "leclerc",
+      "actual_winner_probability": 0.12979532738077115,
+      "actual_winner_probability_rank": 4,
+      "actual_winner_qualifying_position": 6.0,
+      "actual_winner_grid": 6,
+      "actual_winner_qualifying_gap_to_pole_seconds": 0.3580000000000041,
+      "actual_winner_driver_points_last_5": 112.0,
+      "actual_winner_driver_prior_win_rate": 0.38333333333333336,
+      "actual_winner_constructor_prior_points": 3070.5
+    },
+    {
+      "season": 2024,
+      "round": 3,
+      "actual_winner_driver_id": "sainz",
+      "predicted_winner_driver_id": "max_verstappen",
+      "actual_winner_probability": 0.13212523676316693,
+      "actual_winner_probability_rank": 2,
+      "actual_winner_qualifying_position": 2.0,
+      "actual_winner_grid": 2,
+      "actual_winner_qualifying_gap_to_pole_seconds": 0.27000000000001023,
+      "actual_winner_driver_points_last_5": 43.0,
+      "actual_winner_driver_prior_win_rate": 0.015873015873015872,
+      "actual_winner_constructor_prior_points": 2459.5
+    },
+    {
+      "season": 2023,
+      "round": 5,
+      "actual_winner_driver_id": "max_verstappen",
+      "predicted_winner_driver_id": "perez",
+      "actual_winner_probability": 0.13694019663559795,
+      "actual_winner_probability_rank": 3,
+      "actual_winner_qualifying_position": 9.0,
+      "actual_winner_grid": 9,
+      "actual_winner_qualifying_gap_to_pole_seconds": NaN,
+      "actual_winner_driver_points_last_5": 112.0,
+      "actual_winner_driver_prior_win_rate": 0.3177570093457944,
+      "actual_winner_constructor_prior_points": 2623.5
+    },
+    {
+      "season": 2024,
+      "round": 13,
+      "actual_winner_driver_id": "piastri",
+      "predicted_winner_driver_id": "norris",
+      "actual_winner_probability": 0.1496552537574335,
+      "actual_winner_probability_rank": 3,
+      "actual_winner_qualifying_position": 2.0,
+      "actual_winner_grid": 2,
+      "actual_winner_qualifying_gap_to_pole_seconds": 0.02199999999999136,
+      "actual_winner_driver_points_last_5": 64.0,
+      "actual_winner_driver_prior_win_rate": 0.0,
+      "actual_winner_constructor_prior_points": 1373.0
+    }
+  ],
+  "holdout_policy": "2025 was not loaded or evaluated.",
+  "importance_method": "XGBoost booster gain; fitted on training seasons only."
+}
