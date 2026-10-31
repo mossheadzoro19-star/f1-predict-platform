@@ -155,3 +155,24 @@ def test_teammate_q3_gap_is_computed_for_actual_teammates():
     assert driver_a["teammate_q3_gap_seconds"] == pytest.approx(-0.8)
     assert driver_b["teammate_q3_gap_seconds"] == pytest.approx(0.8)
 
+
+
+def test_constructor_relative_points_share_is_point_in_time():
+    races, results, qualifying = _inputs()
+
+    features = build_pre_race_features(races, results, qualifying)
+    first = features[features["round"] == 1]
+    second = features[features["round"] == 2]
+
+    # First race has no prior constructor performance.
+    assert first["constructor_points_share_last_3"].isna().all()
+    assert first["constructor_points_share_last_5"].isna().all()
+    assert first["constructor_points_share_trend_3v3"].isna().all()
+
+    # Round 2 can only see each constructor's Round 1 points share.
+    team_a = second[second["constructor_id"] == "team-a"].iloc[0]
+    team_b = second[second["constructor_id"] == "team-b"].iloc[0]
+    assert team_a["constructor_points_share_last_3"] == pytest.approx(25 / 43)
+    assert team_b["constructor_points_share_last_3"] == pytest.approx(18 / 43)
+    assert team_a["constructor_points_share_last_5"] == pytest.approx(25 / 43)
+    assert pd.isna(team_a["constructor_points_share_trend_3v3"])
