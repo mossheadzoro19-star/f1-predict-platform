@@ -26,6 +26,12 @@ def _ablation_frame(seasons=(2020, 2021, 2022)):
                         for feature in ablation.RELATIVE_CONSTRUCTOR_FEATURES
                     }
                 )
+                row.update(
+                    {
+                        feature: float(driver_number + 1)
+                        for feature in ablation.ALL_LINEAGE_FEATURES
+                    }
+                )
                 rows.append(row)
     return pd.DataFrame(rows)
 
@@ -62,6 +68,15 @@ def test_feature_sets_are_valid_and_relative_features_are_isolated():
     assert relative.issubset(no_dominance_plus_relative)
     assert not (
         set(ablation.CAREER_DOMINANCE_FEATURES) & no_dominance_plus_relative
+    )
+    assert set(ablation.FEATURE_SETS["baseline_plus_recent_lineage"]) == (
+        baseline | set(ablation.RECENT_LINEAGE_FEATURES)
+    )
+    assert set(ablation.FEATURE_SETS["baseline_plus_full_lineage"]) == (
+        baseline | set(ablation.FULL_LINEAGE_FEATURES)
+    )
+    assert set(ablation.FEATURE_SETS["baseline_plus_all_lineage"]) == (
+        baseline | set(ablation.ALL_LINEAGE_FEATURES)
     )
     assert set(ablation.FEATURE_SETS["qualifying_only"]) == set(
         ablation.QUALIFYING_FEATURES
