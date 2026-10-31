@@ -67,7 +67,7 @@ def test_walk_forward_uses_only_prior_seasons_and_reports_each_fold(monkeypatch)
 
     monkeypatch.setattr(walk_forward, "run_experiment", fake_run_experiment)
 
-    report, audit = walk_forward.run_walk_forward(
+    report, audit, probabilities = walk_forward.run_walk_forward(
         frame,
         validation_years=(2021, 2022),
     )
@@ -83,6 +83,17 @@ def test_walk_forward_uses_only_prior_seasons_and_reports_each_fold(monkeypatch)
         "xgboost",
     }
     assert len(audit) == 4 * 3
+    assert len(probabilities) == 4 * 2 * 3
+    assert set(probabilities["model"]) == {
+        "uniform", "logistic_regression", "xgboost"
+    }
+    assert probabilities.groupby(["season", "round", "model"])[
+        "predicted_win_probability"
+    ].sum().round(10).eq(1.0).all()
+    assert set(probabilities["probability_rank"]) == {1, 2}
+    assert probabilities.groupby(["season", "round", "model"])[
+        "actual_winner"
+    ].sum().eq(1).all()
     assert set(report["combined_out_of_fold_metrics"]) == {
         "uniform",
         "logistic_regression",
