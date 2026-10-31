@@ -56,3 +56,19 @@ The command rejects any input containing a season after 2024. The 2025 season is
 ## Interpretation
 
 Compare season-level Log Loss first. A model that performs well in one season but degrades sharply in another is not considered robust based on aggregate accuracy alone. Do not change features or hyperparameters from these results until the fold-level behaviour and race-level errors have been reviewed.
+
+
+## Probability calibration experiment
+
+After generating all-driver out-of-fold probabilities, run:
+
+```bash
+python -m f1_predict.modeling.pre_race_calibration
+```
+
+The experiment fits one scalar temperature on XGBoost out-of-fold probabilities from 2021–2022, then evaluates without refitting on 2023 and 2024. Fit and evaluation seasons are disjoint. Outputs:
+
+- `reports/pre_race_calibration/metrics.json`: fitted temperature and baseline-versus-calibrated Log Loss, Brier score and winner accuracy.
+- `reports/pre_race_calibration/evaluation_probabilities.csv`: per-driver evaluation probabilities before and after temperature scaling.
+
+Temperature scaling changes probability sharpness but preserves each race's driver ranking. It cannot repair an incorrectly ranked winner. This is a small-sample diagnostic, not proof of production calibration. The 2025 holdout remains excluded.
